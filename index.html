@@ -340,7 +340,24 @@ const DB = {
   async assignProductToShelf(shelf_id, product_id, quantity) {
     const { data, error } = await supabase.from('product_shelves').upsert({ shelf_id, product_id, quantity }, { onConflict: 'shelf_id,product_id' }).select().single();
     if (error) throw error; return data;
-  },
+  },// เพิ่มต่อท้ายใน DB object
+async deleteTransaction(txId) {
+  const { data, error } = await supabase.rpc('delete_transaction', { p_tx_id: txId });
+  if (error) throw error;
+  return data;
+},
+async updateTransaction({ id, account_id, type, category, amount, note }) {
+  const { data, error } = await supabase.rpc('update_transaction', {
+    p_tx_id: id,
+    p_new_account_id: account_id,
+    p_new_type: type,
+    p_new_category: category,
+    p_new_amount: amount,
+    p_new_note: note || null
+  });
+  if (error) throw error;
+  return data;
+}
 };
 
 /* ============================================================
@@ -857,17 +874,89 @@ async function renderFinance(root) {
     } catch (e) { toast('ทำรายการไม่สำเร็จ: ' + e.message, 'error'); }
   };
 
-  try {
-    const txs = await DB.getRecentTransactions();
-    root.querySelector('#tx-list').innerHTML = txs.length === 0 ? `<p class="text-sm text-muted text-center py-6">ยังไม่มีรายการ</p>` : txs.map(t => `
+ try {
+  const txs = await DB.getRecentTransactions(15);
+  const txListEl = root.querySelector('#tx-list');
+  
+  if (txs.length === 0) {
+    txListEl.innerHTML = `<p class="text-sm text-muted text-center py-6">ยังไม่มีรายการ</p>`;
+  } else {
+    txListEl.innerHTML = txs.map(t => `
       <div class="bg-surface border border-hairline rounded-xl px-4 py-3 flex items-center justify-between">
-        <div>
-          <p class="text-sm font-medium">${t.category}</p>
+        <div class="min-w-0 flex-1 cursor-pointer" data-tx-edit="${t.id}">
+          <p class="text-sm font-medium">${t.category} ${t.note ? `<span class="text-xs font-normal text-muted">(${t.note})</span>` : ''}</p>
           <p class="text-xs text-muted">${new Date(t.created_at).toLocaleDateString('th-TH', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' })}</p>
         </div>
-        <span class="font-display font-semibold tnum ${t.type === 'income' ? 'text-success' : 'text-danger'}">${t.type === 'income' ? '+' : '−'}฿${fmtMoney(t.amount)}</span>
-      </div>`).join('');
-  } catch (e) { toast('โหลดรายการไม่สำเร็จ', 'error'); }
+        <div class="flex items-center gap-3">
+          <span class="font-display font-semibold tnum ${t.type === 'income' ? 'text-success' : 'text-danger'}">
+            ${t.type === 'income' ? '+' : '−'}฿${fmtMoney(t.amount)}
+          </span>
+          <button data-tx-del="${t.id}" class="press w-7 h-7 rounded-full bg-danger-light text-danger flex items-center justify-center text-sm font-bold">×</button>
+        </div>
+      </div>
+    `).join('');
+
+    // ผูก Event สำหรับลบรายการ
+    txListEl.querySelectorAll('[data-tx-del]').forEach(btn => {
+      btn.onclick = async (e) => {
+        e.stopPropagation();
+        if (confirm('คุณต้องการลบรายการนี้ใช่หรือไม่? ยอดเงินในกระเป๋าจะถูกปรับคืนให้อัตโนมัติ')) {
+          try {
+            await DB.deleteTransaction(btn.dataset.txDel);
+            toast('ลบรายการสำเร็จ ✓', 'success');
+            go('finance');
+          } catch (err) {
+            toast('ลบไม่สำเร็จ: ' + err.message, 'error');
+          }
+        }
+      };
+    });
+
+    // ผูก Event สำหรับกดเพื่อดึงข้อมูลกลับขึ้นมาแก้ไข
+    txListEl.querySelectorAll('[data-tx-edit]').forEach(el => {
+      el.onclick = () => {
+        const t = txs.find(x => x.id === el.dataset.txEdit);
+        if (!t) return;
+        
+        // ดึงค่าใส่ฟอร์ม
+        root.querySelector(`[data-acc="${t.account_id}"]`)?.click();
+        root.querySelector(`[data-type="${t.type}"]`)?.click();
+        root.querySelector('#tx-amount').value = t.amount;
+        root.querySelector('#tx-category').value = t.category;
+        root.querySelector('#tx-note').value = t.note || '';
+        
+        // เปลี่ยนปุ่มบันทึกให้เป็นการอัปเดตแทน
+        const saveBtn = root.querySelector('#tx-save');
+        saveBtn.textContent = 'บันทึกการแก้ไข';
+        saveBtn.onclick = async () => {
+          const amount = parseFloat(root.querySelector('#tx-amount').value);
+          const category = root.querySelector('#tx-category').value.trim();
+          const note = root.querySelector('#tx-note').value.trim();
+          
+          if (!amount || amount <= 0 || !category) return toast('กรอกข้อมูลให้ถูกต้อง', 'error');
+          
+          try {
+            await DB.updateTransaction({
+              id: t.id,
+              account_id: selectedAccount,
+              type: txType,
+              category,
+              amount,
+              note
+            });
+            toast('แก้ไขรายการสำเร็จ ✓', 'success');
+            go('finance');
+          } catch (err) {
+            toast('แก้ไขไม่สำเร็จ: ' + err.message, 'error');
+          }
+        };
+        
+        window.scrollTo({ top: 100, behavior: 'smooth' });
+        toast('ดึงข้อมูลขึ้นมาแก้ไขแล้ว', 'info');
+      };
+    });
+  }
+} catch (e) { toast('โหลดรายการไม่สำเร็จ', 'error'); }
 }
 
 /* ============================================================
@@ -1350,6 +1439,8 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(() => {});
   });
 }
+
+
 </script>
 </body>
 </html>
