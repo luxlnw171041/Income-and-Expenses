@@ -1,0 +1,19 @@
+{
+  "name": "ตู้ซื่อสัตย์ - Honesty Shop",
+  "short_name": "ตู้ซื่อสัตย์",
+  "description": "ระบบจัดการร้านค้าแบบ Self-Service / Honesty Shop นับสต็อก บันทึกรายรับ-รายจ่าย",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F5F7F1",
+  "theme_color": "#145C52",
+  "lang": "th",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='40' fill='%23145C52'/%3E%3Ctext x='96' y='128' font-size='110' text-anchor='middle' fill='white' font-family='sans-serif'%3E%E0%B8%8B%3C/text%3E%3C/svg%3E",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    }
+  ]
+}

@@ -1,0 +1,1334 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>สามสีน่ารักที่สุดในโลก</title>
+<meta name="theme-color" content="#145C52">
+<link rel="manifest" href="manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;500;600;700&family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          bg: '#F5F7F1',
+          surface: '#FFFFFF',
+          primary: { DEFAULT: '#145C52', dark: '#0E453D', light: '#E4EFEA' },
+          accent: { DEFAULT: '#F2A33C', dark: '#D98A22', light: '#FCEBD1' },
+          danger: { DEFAULT: '#D9483F', light: '#FBE4E2' },
+          success: { DEFAULT: '#3FA34D', light: '#E4F5E7' },
+          ink: '#1B2420',
+          muted: '#6B7770',
+          hairline: '#E4E7E0',
+        },
+        fontFamily: {
+          display: ['Kanit', 'sans-serif'],
+          body: ['Sarabun', 'sans-serif'],
+        },
+        borderRadius: { '2xl': '1.25rem', '3xl': '1.75rem' },
+      }
+    }
+  }
+</script>
+<style>
+  * { -webkit-tap-highlight-color: transparent; }
+  html, body { overscroll-behavior-y: none; }
+  body { font-family: 'Sarabun', sans-serif; background: #F5F7F1; color: #1B2420; }
+  .font-display { font-family: 'Kanit', sans-serif; }
+  .tnum { font-variant-numeric: tabular-nums; }
+
+  /* page transitions */
+  .screen { animation: fadeSlideIn .28s cubic-bezier(.22,.9,.32,1) both; }
+  @keyframes fadeSlideIn { from { opacity:0; transform: translateY(10px);} to { opacity:1; transform:none; } }
+
+  /* press feedback */
+  .press { transition: transform .12s ease, opacity .12s ease; }
+  .press:active { transform: scale(0.94); opacity: .85; }
+
+  /* badge pop */
+  .pop-in { animation: popIn .32s cubic-bezier(.34,1.56,.64,1) both; }
+  @keyframes popIn { 0% { opacity:0; transform: scale(.5) translateY(4px);} 100% { opacity:1; transform: scale(1) translateY(0);} }
+
+  /* toast */
+  #toast-wrap { position: fixed; top: max(env(safe-area-inset-top), 12px); left: 0; right: 0; z-index: 60; display:flex; flex-direction:column; align-items:center; gap:8px; pointer-events:none; }
+  .toast { pointer-events:auto; animation: toastIn .35s cubic-bezier(.22,.9,.32,1) both; }
+  @keyframes toastIn { from { opacity:0; transform: translateY(-16px) scale(.96);} to { opacity:1; transform:none; } }
+  .toast.out { animation: toastOut .25s ease forwards; }
+  @keyframes toastOut { to { opacity:0; transform: translateY(-10px) scale(.97); } }
+
+  /* skeleton shimmer */
+  .shimmer { background: linear-gradient(90deg, #ECEFE8 25%, #F5F7F1 37%, #ECEFE8 63%); background-size: 400% 100%; animation: shimmer 1.4s ease infinite; }
+  @keyframes shimmer { 0% { background-position: 100% 0; } 100% { background-position: 0 0; } }
+
+  /* shelf tag: dashed perforation, signature element */
+  .shelf-tag { position: relative; }
+  .shelf-tag::before {
+    content: ''; position: absolute; left: 14px; right: 14px; top: 0;
+    border-top: 2px dashed #D8DED2;
+  }
+  .shelf-tag .notch { position:absolute; top:-9px; width:18px; height:18px; border-radius:9999px; background:#F5F7F1; border:2px solid #D8DED2; }
+
+  /* count-up number */
+  .count-num { transition: opacity .2s ease; }
+
+  /* nav */
+  .navbtn { transition: color .2s ease, transform .15s ease; }
+  .navbtn.active { color: #145C52; }
+  .navbtn .dot { transition: transform .25s cubic-bezier(.34,1.56,.64,1), opacity .2s ease; }
+
+  /* offline pulse */
+  .pulse-dot { animation: pulseDot 1.6s ease-in-out infinite; }
+  @keyframes pulseDot { 0%,100% { opacity:1; } 50% { opacity:.35; } }
+
+  /* switch */
+  .seg-thumb { transition: transform .25s cubic-bezier(.22,.9,.32,1); }
+
+  input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance:none; margin:0; }
+  input[type=number] { -moz-appearance: textfield; }
+
+  ::selection { background: #F2A33C; color: #fff; }
+</style>
+</head>
+<body class="antialiased">
+
+<div id="toast-wrap"></div>
+
+<!-- App shell -->
+<div class="max-w-md mx-auto min-h-screen flex flex-col bg-bg" style="padding-bottom: env(safe-area-inset-bottom);">
+
+  <!-- Top bar -->
+  <header class="sticky top-0 z-40 bg-bg/90 backdrop-blur border-b border-hairline" style="padding-top: env(safe-area-inset-top);">
+    <div class="flex items-center justify-between px-4 h-14">
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 rounded-xl bg-primary flex items-center justify-center text-white font-display font-semibold text-sm">ส</div>
+        <span class="font-display font-semibold text-[15px] tracking-tight">สามสีน่ารักที่สุดในโลก</span>
+      </div>
+      <div id="net-badge" class="flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full border">
+        <span id="net-dot" class="w-2 h-2 rounded-full"></span>
+        <span id="net-label"></span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Route container -->
+  <main id="app" class="flex-1 px-4 pt-4 pb-28"></main>
+
+  <!-- Bottom nav -->
+  <nav class="fixed bottom-0 left-0 right-0 z-40" style="padding-bottom: env(safe-area-inset-bottom);">
+    <div class="max-w-md mx-auto bg-surface border-t border-hairline rounded-t-3xl shadow-[0_-4px_16px_rgba(0,0,0,0.04)] px-3 pt-2 pb-2 grid grid-cols-4 gap-1">
+      <button data-route="dashboard" class="navbtn press flex flex-col items-center gap-1 py-1.5 rounded-2xl text-muted">
+        <svg class="dot" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5 12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1V9.5Z"/></svg>
+        <span class="text-[11px] font-medium">หน้าแรก</span>
+      </button>
+      <button data-route="count" class="navbtn press flex flex-col items-center gap-1 py-1.5 rounded-2xl text-muted">
+        <svg class="dot" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6v3H9z"/><rect x="5" y="6" width="14" height="15" rx="2"/><path d="M9 12h6M9 16h6"/></svg>
+        <span class="text-[11px] font-medium">นับสต็อก</span>
+      </button>
+      <button data-route="finance" class="navbtn press flex flex-col items-center gap-1 py-1.5 rounded-2xl text-muted">
+        <svg class="dot" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/><circle cx="16.5" cy="14.5" r="1.5" fill="currentColor" stroke="none"/></svg>
+        <span class="text-[11px] font-medium">เงิน</span>
+      </button>
+      <button data-route="inventory" class="navbtn press flex flex-col items-center gap-1 py-1.5 rounded-2xl text-muted">
+        <svg class="dot" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8 12 3 3 8l9 5 9-5Z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg>
+        <span class="text-[11px] font-medium">จัดการ</span>
+      </button>
+    </div>
+  </nav>
+</div>
+
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+/* ============================================================
+   1) CONFIG — ใส่ค่า Supabase ของคุณตรงนี้ (ระบบใช้ Supabase จริงเท่านั้น
+   ไม่มี Mock Mode แล้ว ต้องตั้งค่าให้ครบก่อนใช้งาน)
+   ============================================================ */
+const SUPABASE_URL = 'https://dfemavcrzpmmgqqjrxvz.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRmZW1hdmNyenBtbWdxcWpyeHZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU2ODY4NTEsImV4cCI6MjEwMTI2Mjg1MX0.JYsRkjRwbAqKxqB9MT5iMDOeh5zh087sWmKo_Jx1cbc';
+
+const CONFIGURED = !SUPABASE_URL.includes('SUPABASE_URL') && !!SUPABASE_ANON_KEY && !SUPABASE_ANON_KEY.includes('YOUR_SUPABASE');
+const supabase = CONFIGURED ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+
+/* ============================================================
+   2) TOAST
+   ============================================================ */
+function toast(msg, kind = 'info') {
+  const wrap = document.getElementById('toast-wrap');
+  const el = document.createElement('div');
+  const styles = {
+    info: 'bg-ink text-white',
+    success: 'bg-success text-white',
+    error: 'bg-danger text-white',
+    offline: 'bg-accent text-white',
+  };
+  el.className = `toast ${styles[kind] || styles.info} text-sm font-medium px-4 py-2.5 rounded-full shadow-lg max-w-[90%] text-center`;
+  el.textContent = msg;
+  wrap.appendChild(el);
+  setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 250); }, 2600);
+}
+
+/* ============================================================
+   3) OFFLINE QUEUE (localStorage) + AUTO SYNC
+   ============================================================ */
+const QUEUE_KEY = 'pending_stock_sync';
+
+function getQueue() { try { return JSON.parse(localStorage.getItem(QUEUE_KEY)) || []; } catch { return []; } }
+function setQueue(q) { localStorage.setItem(QUEUE_KEY, JSON.stringify(q)); updateNetBadge(); }
+function pushToQueue(item) { const q = getQueue(); q.push({ ...item, queued_at: Date.now() }); setQueue(q); }
+
+async function syncQueue() {
+  if (!navigator.onLine) return;
+  let q = getQueue();
+  if (q.length === 0) return;
+  toast(`กำลังซิงค์ข้อมูล ${q.length} รายการ...`, 'info');
+  while (q.length > 0) {
+    const item = q[0];
+    try {
+      await DB.processStockAudit(item.payload, true);
+      q.shift();
+      setQueue(q);
+    } catch (e) {
+      console.error('sync failed', e);
+      break; // stop FIFO on first failure, retry later
+    }
+  }
+  if (getQueue().length === 0) toast('ซิงค์ข้อมูลสำเร็จทั้งหมด ✓', 'success');
+  refreshCurrentRoute();
+}
+
+window.addEventListener('online', () => { updateNetBadge(); syncQueue(); });
+window.addEventListener('offline', updateNetBadge);
+
+function updateNetBadge() {
+  const dot = document.getElementById('net-dot');
+  const label = document.getElementById('net-label');
+  const badge = document.getElementById('net-badge');
+  const pending = getQueue().length;
+  if (navigator.onLine) {
+    badge.className = 'flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full border border-success/30 bg-success-light text-success';
+    dot.className = 'w-2 h-2 rounded-full bg-success';
+    label.textContent = pending > 0 ? `ออนไลน์ · ซิงค์ ${pending}` : 'ออนไลน์';
+  } else {
+    badge.className = 'flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full border border-danger/30 bg-danger-light text-danger';
+    dot.className = 'w-2 h-2 rounded-full bg-danger pulse-dot';
+    label.textContent = pending > 0 ? `ออฟไลน์ · รอ ${pending}` : 'ออฟไลน์';
+  }
+}
+
+/* ============================================================
+   4) uid() — small local id generator, still used by the standalone
+   cost/profit calculator's scratch list (section 11), which is
+   intentionally local-only and never touches Supabase.
+   ============================================================ */
+function uid(p) { return p + '_' + Math.random().toString(36).slice(2, 9); }
+
+/* ============================================================
+   5) DATA ACCESS LAYER — Supabase only
+   ============================================================ */
+const DB = {
+  async getBuildings() {
+    const { data, error } = await supabase.from('buildings').select('*').order('name');
+    if (error) throw error; return data;
+  },
+  async getShelves(buildingId) {
+    const { data, error } = await supabase.from('shelves').select('*').eq('building_id', buildingId).order('floor');
+    if (error) throw error; return data;
+  },
+  async getShelfItems(shelfId) {
+    // NOTE: previously this used a single query with an invalid double-nested
+    // embed (`stock_batches:products(stock_batches(...))`), which does not
+    // describe a real foreign-key path and returned undefined/empty data —
+    // so cost_price (and therefore the loss value shown while counting stock)
+    // silently resolved to 0 for every item. Fixed by fetching the shelf
+    // items and the latest cost per product in two simple, correct queries.
+    const { data: rows, error } = await supabase
+      .from('product_shelves')
+      .select('id, quantity, product:products(id,name,selling_price,image_url,min_stock_alert)')
+      .eq('shelf_id', shelfId);
+    if (error) throw error;
+    if (rows.length === 0) return [];
+
+    const productIds = rows.map(r => r.product.id);
+    const { data: batches, error: bErr } = await supabase
+      .from('stock_batches')
+      .select('product_id, cost_price, created_at')
+      .in('product_id', productIds)
+      .order('created_at', { ascending: false });
+    if (bErr) throw bErr;
+
+    const latestCostByProduct = {};
+    for (const b of batches) {
+      if (!(b.product_id in latestCostByProduct)) latestCostByProduct[b.product_id] = b.cost_price;
+    }
+    return rows.map(row => ({
+      id: row.id, quantity: row.quantity, product: row.product,
+      cost_price: latestCostByProduct[row.product.id] ?? 0,
+    }));
+  },
+  async processStockAudit(payload, fromQueue = false) {
+    // payload: { product_shelf_id, expected_qty, actual_qty, cost_price, product_name, account_id }
+    const { data, error } = await supabase.rpc('process_stock_audit', {
+      p_product_shelf_id: payload.product_shelf_id,
+      p_actual_qty: payload.actual_qty,
+    });
+    if (error) throw error;
+    return data;
+  },
+  async getDashboardOverview() {
+    const { data, error } = await supabase.from('view_dashboard_overview').select('*').single();
+    if (error) throw error; return data;
+  },
+  async getLowStockAlerts() {
+    const { data, error } = await supabase.from('view_low_stock_alerts').select('*');
+    if (error) throw error; return data;
+  },
+  async getAccounts() {
+    const { data, error } = await supabase.from('accounts').select('*').order('type');
+    if (error) throw error; return data;
+  },
+  async addTransaction({ account_id, type, category, amount, note }) {
+    const { data, error } = await supabase.rpc('add_transaction', { p_account_id: account_id, p_type: type, p_category: category, p_amount: amount, p_note: note || null });
+    if (error) throw error; return data;
+  },
+  async getRecentTransactions(limit = 8) {
+    const { data, error } = await supabase.from('transactions').select('*').order('created_at', { ascending: false }).limit(limit);
+    if (error) throw error; return data;
+  },
+  async addBuilding(name) {
+    const { data, error } = await supabase.from('buildings').insert({ name }).select().single();
+    if (error) throw error; return data;
+  },
+  async addShelf(building_id, floor) {
+    const { data, error } = await supabase.from('shelves').insert({ building_id, floor }).select().single();
+    if (error) throw error; return data;
+  },
+  async addProduct(p) {
+    const { data, error } = await supabase.from('products').insert(p).select().single();
+    if (error) throw error; return data;
+  },
+  async getProducts() {
+    const { data, error } = await supabase.from('products').select('*').order('name');
+    if (error) throw error; return data;
+  },
+  async addStockBatch(product_id, cost_price, qty) {
+    const { data, error } = await supabase.from('stock_batches').insert({ product_id, cost_price, initial_qty: qty, remaining_qty: qty }).select().single();
+    if (error) throw error; return data;
+  },
+  async getProductsWithCost() {
+    // returns each product with its most recent cost_price + total remaining units across batches
+    const { data: products, error } = await supabase.from('products').select('*').order('name');
+    if (error) throw error;
+    const { data: batches, error: bErr } = await supabase.from('stock_batches').select('*').order('created_at', { ascending: true });
+    if (bErr) throw bErr;
+    // Group batches by product_id in a single pass (was: `batches.filter(...)` re-scanning
+    // the entire batches table once per product — O(products × batches), which gets slow
+    // fast as stock history grows).
+    const batchesByProduct = {};
+    for (const b of batches) (batchesByProduct[b.product_id] ??= []).push(b);
+    return products.map(p => {
+      const pBatches = batchesByProduct[p.id] || [];
+      const latest = pBatches[pBatches.length - 1];
+      const remaining_units = pBatches.reduce((s, b) => s + b.remaining_qty, 0);
+      return { ...p, cost_price: latest ? latest.cost_price : null, remaining_units };
+    });
+  },
+  async assignProductToShelf(shelf_id, product_id, quantity) {
+    const { data, error } = await supabase.from('product_shelves').upsert({ shelf_id, product_id, quantity }, { onConflict: 'shelf_id,product_id' }).select().single();
+    if (error) throw error; return data;
+  },
+};
+
+/* ============================================================
+   6) ROUTER
+   ============================================================ */
+const app = document.getElementById('app');
+let currentRoute = 'dashboard';
+let routeState = {};
+
+const routes = { dashboard: renderDashboard, count: renderCount, finance: renderFinance, inventory: renderInventory, calculator: renderCalculator };
+
+function go(route, state = {}) {
+  currentRoute = route; routeState = state;
+  document.querySelectorAll('.navbtn').forEach(b => b.classList.toggle('active', b.dataset.route === route));
+  app.innerHTML = '';
+  const wrap = document.createElement('div');
+  wrap.className = 'screen';
+  app.appendChild(wrap);
+  routes[route](wrap, state);
+  window.scrollTo({ top: 0 });
+}
+function refreshCurrentRoute() { go(currentRoute, routeState); }
+
+document.querySelectorAll('.navbtn[data-route]').forEach(btn => {
+  btn.addEventListener('click', () => go(btn.dataset.route));
+});
+
+function fmtMoney(n) { return Number(n || 0).toLocaleString('th-TH', { minimumFractionDigits: 0, maximumFractionDigits: 2 }); }
+
+function skeleton(h = 'h-24') {
+  return `<div class="shimmer rounded-2xl ${h} w-full"></div>`;
+}
+
+/* ============================================================
+   7) DASHBOARD
+   ============================================================ */
+async function renderDashboard(root) {
+  root.innerHTML = `
+    <div class="mb-5">
+      <p class="text-muted text-sm">สวัสดี 👋</p>
+      <h1 class="font-display text-2xl font-semibold">ภาพรวมวันนี้</h1>
+    </div>
+    <div id="dash-cards" class="grid grid-cols-2 gap-3 mb-3">
+      ${skeleton('h-24')}${skeleton('h-24')}${skeleton('h-24')}${skeleton('h-24')}
+    </div>
+    <div id="dash-alerts" class="mb-6">${skeleton('h-32')}</div>
+    <div>
+      <h2 class="font-display font-semibold text-base mb-3">ทางลัด</h2>
+      <div class="grid grid-cols-2 gap-3">
+        <button id="qa-count" class="press bg-primary text-white rounded-2xl p-4 text-left shadow-sm">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mb-2"><path d="M9 3h6v3H9z"/><rect x="5" y="6" width="14" height="15" rx="2"/><path d="M9 12h6M9 16h6"/></svg>
+          <div class="font-display font-medium text-sm">ไปนับสต็อก</div>
+        </button>
+        <button id="qa-finance" class="press bg-accent text-white rounded-2xl p-4 text-left shadow-sm">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mb-2"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/></svg>
+          <div class="font-display font-medium text-sm">บันทึกรายรับ-จ่าย</div>
+        </button>
+        <button id="qa-calc" class="press col-span-2 bg-surface border border-hairline rounded-2xl p-4 flex items-center gap-3 shadow-sm">
+          <div class="w-9 h-9 rounded-xl bg-primary-light flex items-center justify-center text-primary shrink-0">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8M8 10h.01M12 10h.01M16 10h.01M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01M16 18h.01"/></svg>
+          </div>
+          <div class="text-left">
+            <div class="font-display font-medium text-sm">คำนวณต้นทุน-กำไร</div>
+            <div class="text-xs text-muted">คำนวณเฉยๆ ตอนซื้อของ ไม่บันทึกเข้าระบบ</div>
+          </div>
+        </button>
+      </div>
+    </div>
+  `;
+  root.querySelector('#qa-count').onclick = () => go('count');
+  root.querySelector('#qa-finance').onclick = () => go('finance');
+  root.querySelector('#qa-calc').onclick = () => go('calculator', { from: 'dashboard' });
+
+  try {
+    const [overview, alerts] = await Promise.all([DB.getDashboardOverview(), DB.getLowStockAlerts()]);
+    const cards = [
+      { label: 'ยอดขายรวม', value: overview.total_sales, color: 'text-primary', icon: 'sale' },
+      { label: 'กำไรสุทธิ', value: overview.net_profit ?? (overview.total_sales - overview.total_expenses), color: overview.net_profit >= 0 ? 'text-success' : 'text-danger', icon: 'profit' },
+      { label: 'รายจ่ายรวม', value: overview.total_expenses, color: 'text-ink', icon: 'expense' },
+      { label: 'มูลค่าสูญหาย', value: overview.total_loss_value, color: 'text-danger', icon: 'loss' },
+    ];
+    root.querySelector('#dash-cards').innerHTML = cards.map((c, i) => `
+      <div class="bg-surface rounded-2xl p-4 border border-hairline pop-in" style="animation-delay:${i * 60}ms">
+        <p class="text-xs text-muted mb-1">${c.label}</p>
+        <p class="font-display font-semibold text-xl tnum ${c.color}">฿${fmtMoney(c.value)}</p>
+      </div>
+    `).join('');
+
+    const alertsHtml = alerts.length === 0
+      ? `<div class="bg-primary-light rounded-2xl p-4 text-sm text-primary flex items-center gap-2">
+           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
+           สต็อกทุกจุดยังปกติดี
+         </div>`
+      : `<div class="bg-surface rounded-2xl border border-hairline overflow-hidden">
+          <div class="px-4 pt-3 pb-2 flex items-center justify-between">
+            <h3 class="font-display font-semibold text-sm">⚠️ สินค้าใกล้หมด (${alerts.length})</h3>
+          </div>
+          <div class="divide-y divide-hairline">
+            ${alerts.map(a => `
+              <div class="px-4 py-3 flex items-center justify-between text-sm">
+                <div>
+                  <p class="font-medium">${a.product_name}</p>
+                  <p class="text-xs text-muted">${a.building} · ชั้น ${a.floor}</p>
+                </div>
+                <span class="font-display font-semibold text-danger tnum">${a.quantity}/${a.min_stock_alert}</span>
+              </div>
+            `).join('')}
+          </div>
+        </div>`;
+    root.querySelector('#dash-alerts').innerHTML = alertsHtml;
+  } catch (e) {
+    console.error(e);
+    toast('โหลดข้อมูลไม่สำเร็จ: ' + e.message, 'error');
+  }
+}
+
+/* ============================================================
+   8) STOCK COUNTING (signature screen)
+   ============================================================ */
+let countCart = {}; // product_shelf_id -> { actual, expected, cost_price, product }
+
+async function renderCount(root, state) {
+  const step = state.step || 'building';
+
+  if (step === 'building') {
+    root.innerHTML = `<div class="mb-4"><h1 class="font-display text-2xl font-semibold">เลือกตึก</h1><p class="text-muted text-sm">เริ่มนับสต็อกจากตึกที่ต้องการ</p></div>
+      <div id="b-list" class="space-y-3">${skeleton('h-16')}${skeleton('h-16')}</div>`;
+    const buildings = await DB.getBuildings();
+    root.querySelector('#b-list').innerHTML = buildings.map(b => `
+      <button data-id="${b.id}" class="press w-full bg-surface border border-hairline rounded-2xl p-4 flex items-center justify-between shadow-sm">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-primary-light flex items-center justify-center text-primary font-display font-semibold">${b.name.slice(-1)}</div>
+          <span class="font-medium">${b.name}</span>
+        </div>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-muted"><path d="m9 18 6-6-6-6"/></svg>
+      </button>`).join('');
+    root.querySelectorAll('#b-list button').forEach(b => b.onclick = () => go('count', { step: 'shelf', buildingId: b.dataset.id, buildingName: buildings.find(x=>x.id===b.dataset.id).name }));
+    return;
+  }
+
+  if (step === 'shelf') {
+    root.innerHTML = `
+      <button id="back" class="press text-sm text-muted flex items-center gap-1 mb-3">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg> กลับ
+      </button>
+      <h1 class="font-display text-2xl font-semibold mb-1">${state.buildingName}</h1>
+      <p class="text-muted text-sm mb-4">เลือกชั้นที่ต้องการนับ</p>
+      <div id="s-list" class="grid grid-cols-2 gap-3">${skeleton('h-20')}${skeleton('h-20')}</div>`;
+    root.querySelector('#back').onclick = () => go('count', { step: 'building' });
+    const shelves = await DB.getShelves(state.buildingId);
+    root.querySelector('#s-list').innerHTML = shelves.map(s => `
+      <button data-id="${s.id}" class="press bg-surface border border-hairline rounded-2xl p-4 flex flex-col items-center justify-center gap-1 shadow-sm">
+        <span class="font-display font-semibold text-2xl text-primary">${s.floor}</span>
+        <span class="text-xs text-muted">ชั้น</span>
+      </button>`).join('');
+    root.querySelectorAll('#s-list button').forEach(b => b.onclick = () => go('count', { ...state, step: 'items', shelfId: b.dataset.id, floor: shelves.find(x=>x.id===b.dataset.id).floor }));
+    return;
+  }
+
+  if (step === 'items') {
+    countCart = {};
+    root.innerHTML = `
+      <button id="back" class="press text-sm text-muted flex items-center gap-1 mb-3">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg> กลับ
+      </button>
+      <h1 class="font-display text-2xl font-semibold mb-1">${state.buildingName} · ชั้น ${state.floor}</h1>
+      <p class="text-muted text-sm mb-4">แตะ + / − หรือกดค้างเพื่อปรับเร็ว</p>
+      <div id="items-list" class="space-y-4 mb-4">${skeleton('h-28')}${skeleton('h-28')}</div>`;
+    root.querySelector('#back').onclick = () => go('count', { ...state, step: 'shelf' });
+
+    const items = await DB.getShelfItems(state.shelfId);
+    if (items.length === 0) {
+      root.querySelector('#items-list').innerHTML = `<div class="text-center py-10 text-muted text-sm">ยังไม่มีสินค้าบนชั้นนี้<br>ไปที่ "จัดการ" เพื่อเพิ่มสินค้าเข้าชั้น</div>`;
+      return;
+    }
+    items.forEach(it => countCart[it.id] = { actual: it.quantity, expected: it.quantity, cost_price: it.cost_price, product: it.product });
+
+    const list = root.querySelector('#items-list');
+    list.innerHTML = items.map(it => itemCardHtml(it)).join('');
+    items.forEach(it => bindItemCard(root, it.id));
+
+    // sticky save bar — docked above the bottom nav, never overlapping list items
+    const bar = document.createElement('div');
+    bar.id = 'save-bar';
+    bar.className = 'fixed left-0 right-0 z-50 bg-gradient-to-t from-bg via-bg to-bg/0 pt-6';
+    bar.innerHTML = `
+      <div class="max-w-md mx-auto px-4 pb-3">
+        <button id="save-audit" class="press w-full bg-primary text-white font-display font-medium text-base py-4 rounded-2xl shadow-lg flex items-center justify-center gap-2">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
+          บันทึกการนับสต็อก
+        </button>
+      </div>`;
+    root.appendChild(bar);
+    root.querySelector('#save-audit').onclick = () => saveAudit(root, state);
+    dockFooterBar(bar, list);
+    return;
+  }
+}
+
+// Measures the real height of the fixed bottom nav + save bar, then docks the bar
+// directly above the nav and pads the scrollable list so the last card is never hidden.
+function dockFooterBar(bar, list) {
+  const place = () => {
+    const nav = document.querySelector('nav');
+    const navH = nav ? nav.getBoundingClientRect().height : 72;
+    bar.style.bottom = navH + 'px';
+    const barH = bar.getBoundingClientRect().height;
+    list.style.paddingBottom = (barH + 20) + 'px';
+  };
+  requestAnimationFrame(place);
+  window.addEventListener('resize', place, { once: true });
+}
+
+function itemCardHtml(it) {
+  return `
+  <div class="shelf-tag bg-surface border border-hairline rounded-2xl pt-5 pb-4 px-4 shadow-sm relative" data-card="${it.id}">
+    <span class="notch" style="left:50%; transform:translateX(-50%);"></span>
+    <div class="flex items-center gap-3 mb-3">
+      <div class="w-12 h-12 rounded-xl bg-primary-light flex items-center justify-center text-primary font-display font-semibold overflow-hidden shrink-0">
+        ${it.product.image_url ? `<img src="${it.product.image_url}" class="w-full h-full object-cover">` : it.product.name.slice(0,1)}
+      </div>
+      <div class="min-w-0 flex-1">
+        <p class="font-medium text-[15px] truncate">${it.product.name}</p>
+        <p class="text-xs text-muted">฿${fmtMoney(it.product.selling_price)} · ระบบมี <span class="tnum">${it.quantity}</span> ชิ้น</p>
+      </div>
+      <span data-diff="${it.id}" class="text-xs font-display font-semibold px-2 py-1 rounded-full bg-hairline text-muted tnum">0</span>
+    </div>
+    <div class="flex items-center justify-center gap-4">
+      <button data-minus="${it.id}" class="press w-12 h-12 rounded-full bg-danger-light text-danger flex items-center justify-center font-display text-2xl font-semibold">−</button>
+      <input data-input="${it.id}" type="number" inputmode="numeric" value="${it.quantity}" class="tnum font-display font-semibold text-2xl text-center w-16 bg-transparent border-b-2 border-hairline focus:border-primary outline-none py-1">
+      <button data-plus="${it.id}" class="press w-12 h-12 rounded-full bg-primary-light text-primary flex items-center justify-center font-display text-2xl font-semibold">+</button>
+    </div>
+  </div>`;
+}
+
+function bindItemCard(root, id) {
+  const input = root.querySelector(`[data-input="${id}"]`);
+  const minus = root.querySelector(`[data-minus="${id}"]`);
+  const plus = root.querySelector(`[data-plus="${id}"]`);
+  const diffEl = root.querySelector(`[data-diff="${id}"]`);
+
+  function setVal(v) {
+    v = Math.max(0, v);
+    input.value = v;
+    countCart[id].actual = v;
+    updateDiff();
+  }
+  function updateDiff() {
+    const diff = countCart[id].actual - countCart[id].expected;
+    diffEl.classList.remove('pop-in'); void diffEl.offsetWidth; diffEl.classList.add('pop-in');
+    if (diff < 0) {
+      const loss = Math.abs(diff) * countCart[id].cost_price;
+      diffEl.className = 'pop-in text-xs font-display font-semibold px-2 py-1 rounded-full bg-danger-light text-danger tnum';
+      diffEl.textContent = `${diff} ชิ้น (ขาดทุน ฿${fmtMoney(loss)})`;
+    } else if (diff > 0) {
+      diffEl.className = 'pop-in text-xs font-display font-semibold px-2 py-1 rounded-full bg-success-light text-success tnum';
+      diffEl.textContent = `+${diff} ชิ้น`;
+    } else {
+      diffEl.className = 'pop-in text-xs font-display font-semibold px-2 py-1 rounded-full bg-hairline text-muted tnum';
+      diffEl.textContent = '0';
+    }
+  }
+
+  input.addEventListener('input', () => setVal(parseInt(input.value || '0', 10)));
+
+  function holdRepeat(btn, delta) {
+    let interval, timeout;
+    const start = (e) => {
+      e.preventDefault();
+      setVal(countCart[id].actual + delta);
+      timeout = setTimeout(() => { interval = setInterval(() => setVal(countCart[id].actual + delta), 90); }, 400);
+    };
+    const stop = () => { clearTimeout(timeout); clearInterval(interval); };
+    btn.addEventListener('pointerdown', start);
+    ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => btn.addEventListener(ev, stop));
+  }
+  holdRepeat(minus, -1);
+  holdRepeat(plus, 1);
+}
+
+async function saveAudit(root, state) {
+  const btn = root.querySelector('#save-audit');
+  btn.disabled = true;
+  btn.innerHTML = `<span class="animate-spin inline-block w-5 h-5 border-2 border-white/40 border-t-white rounded-full"></span>`;
+  const entries = Object.entries(countCart);
+  const accounts = await DB.getAccounts().catch(() => []);
+  const businessAccount = accounts.find(a => a.type === 'business') || accounts[0];
+
+  // Was: a `for...of` loop with `await` inside, so each item's save request
+  // waited for the previous one to fully round-trip before starting the next —
+  // for N shelf items that's N sequential network calls back to back, which is
+  // exactly the "หน่วง" feeling on the save button. Each item is independent
+  // (different product_shelf_id), so they're safe to fire in parallel.
+  const results = await Promise.allSettled(entries.map(([psId, c]) => {
+    const payload = {
+      product_shelf_id: psId, expected_qty: c.expected, actual_qty: c.actual,
+      cost_price: c.cost_price, product_name: c.product.name, account_id: businessAccount?.id,
+    };
+    if (!navigator.onLine) { pushToQueue({ payload }); return Promise.resolve('offline'); }
+    return DB.processStockAudit(payload)
+      .then(() => 'ok')
+      .catch(() => { pushToQueue({ payload }); return 'offline'; });
+  }));
+  let okCount = results.filter(r => r.status === 'fulfilled' && r.value === 'ok').length;
+  let offlineCount = results.filter(r => r.status === 'fulfilled' && r.value === 'offline').length;
+  updateNetBadge();
+  if (offlineCount > 0 && okCount === 0) toast(`บันทึกในเครื่องแล้ว (ออฟไลน์) — จะซิงค์อัตโนมัติเมื่อมีเน็ต`, 'offline');
+  else if (offlineCount > 0) toast(`บันทึกแล้ว ${okCount} รายการ, อีก ${offlineCount} รอซิงค์`, 'info');
+  else toast('บันทึกการนับสต็อกสำเร็จ ✓', 'success');
+
+  go('dashboard');
+}
+
+/* ============================================================
+   9) FINANCE
+   ============================================================ */
+const QUICK_CATS_KEY = 'quick_categories';
+const DEFAULT_QUICK_CATS = [
+  { label: 'ค่าหอพัก', type: 'expense', category: 'ค่าหอพัก' },
+  { label: 'ค่าไฟ/น้ำ', type: 'expense', category: 'ค่าสาธารณูปโภค' },
+  { label: 'ยอดขาย', type: 'income', category: 'ยอดขาย' },
+  { label: 'ซื้อสินค้าเข้าสต็อก', type: 'expense', category: 'ซื้อสินค้า' },
+];
+function loadQuickCats() {
+  try { const v = JSON.parse(localStorage.getItem(QUICK_CATS_KEY)); return Array.isArray(v) ? v : DEFAULT_QUICK_CATS; }
+  catch { return DEFAULT_QUICK_CATS; }
+}
+function saveQuickCats(list) { localStorage.setItem(QUICK_CATS_KEY, JSON.stringify(list)); }
+
+async function renderFinance(root) {
+  const accounts = await DB.getAccounts();
+  let selectedAccount = accounts[0]?.id;
+  let txType = 'expense';
+  let quickButtons = loadQuickCats();
+  let editingQuick = false;
+
+  root.innerHTML = `
+    <h1 class="font-display text-2xl font-semibold mb-4">รายรับ-รายจ่าย</h1>
+
+    <div class="flex gap-2 mb-4" id="acc-pills">
+      ${accounts.map(a => `
+        <button data-acc="${a.id}" class="press flex-1 rounded-2xl border p-3 text-left ${a.id===selectedAccount?'border-primary bg-primary-light':'border-hairline bg-surface'}">
+          <p class="text-xs text-muted">${a.type === 'business' ? '🏪 ร้านค้า' : '👤 ส่วนตัว'}</p>
+          <p class="font-display font-semibold tnum">฿${fmtMoney(a.balance)}</p>
+        </button>`).join('')}
+    </div>
+
+    <div class="bg-surface border border-hairline rounded-2xl p-4 mb-4">
+      <div class="flex bg-bg rounded-full p-1 mb-4 relative">
+        <div id="seg-thumb" class="seg-thumb absolute top-1 bottom-1 w-1/2 rounded-full bg-danger" style="transform:translateX(0%)"></div>
+        <button data-type="expense" class="relative z-10 flex-1 py-2 text-sm font-medium rounded-full text-white">รายจ่าย</button>
+        <button data-type="income" class="relative z-10 flex-1 py-2 text-sm font-medium rounded-full text-ink">รายรับ</button>
+      </div>
+
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-xs text-muted">รายการลัด</span>
+        <button id="quick-edit-toggle" class="press text-xs font-medium text-primary flex items-center gap-1">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+          <span id="quick-edit-label">ปรับแต่ง</span>
+        </button>
+      </div>
+      <div class="flex flex-wrap gap-2 mb-2" id="quick-cats"></div>
+      <div id="quick-add-form" class="hidden bg-bg rounded-2xl p-3 mb-4 space-y-2">
+        <input id="qc-label" placeholder="ชื่อปุ่ม เช่น ค่าเน็ต" class="w-full text-sm bg-surface rounded-xl px-3 py-2 outline-none border border-hairline">
+        <input id="qc-category" placeholder="หมวดหมู่ที่จะบันทึก" class="w-full text-sm bg-surface rounded-xl px-3 py-2 outline-none border border-hairline">
+        <div class="flex bg-surface rounded-full p-1 border border-hairline">
+          <button data-qctype="expense" class="qc-type-btn flex-1 py-1.5 text-xs font-medium rounded-full bg-danger text-white">รายจ่าย</button>
+          <button data-qctype="income" class="qc-type-btn flex-1 py-1.5 text-xs font-medium rounded-full text-ink">รายรับ</button>
+        </div>
+        <button id="qc-save" class="press w-full bg-primary text-white text-sm font-medium py-2 rounded-xl">เพิ่มรายการลัด</button>
+      </div>
+
+      <label class="text-xs text-muted mb-1 block">จำนวนเงิน</label>
+      <input id="tx-amount" type="number" inputmode="decimal" placeholder="0.00" class="w-full font-display text-3xl font-semibold tnum bg-transparent border-b-2 border-hairline focus:border-primary outline-none py-2 mb-4">
+
+      <label class="text-xs text-muted mb-1 block">หมวดหมู่</label>
+      <input id="tx-category" type="text" placeholder="เช่น ค่าหอพัก" class="w-full text-sm bg-bg rounded-xl px-3 py-2.5 mb-3 outline-none focus:ring-2 focus:ring-primary/30">
+
+      <label class="text-xs text-muted mb-1 block">โน้ต (ไม่บังคับ)</label>
+      <input id="tx-note" type="text" placeholder="รายละเอียดเพิ่มเติม" class="w-full text-sm bg-bg rounded-xl px-3 py-2.5 mb-4 outline-none focus:ring-2 focus:ring-primary/30">
+
+      <button id="tx-save" class="press w-full bg-primary text-white font-display font-medium py-3.5 rounded-2xl">บันทึกรายการ</button>
+    </div>
+
+    <details class="bg-surface border border-hairline rounded-2xl p-4 mb-4">
+      <summary class="font-display font-semibold text-sm cursor-pointer">🧮 กระทบยอดเงินสด (Cash Reconciliation)</summary>
+      <div class="mt-3">
+        <label class="text-xs text-muted mb-1 block">นับเงินจริงได้เท่าไหร่</label>
+        <input id="cash-actual" type="number" inputmode="decimal" placeholder="0.00" class="w-full font-display text-xl font-semibold tnum bg-bg rounded-xl px-3 py-2.5 mb-3 outline-none">
+        <button id="cash-recon" class="press w-full bg-accent text-white font-display font-medium py-3 rounded-2xl text-sm">ปรับยอดให้ตรงกับเงินจริง</button>
+      </div>
+    </details>
+
+    <h2 class="font-display font-semibold text-base mb-2">รายการล่าสุด</h2>
+    <div id="tx-list" class="space-y-2">${skeleton('h-14')}</div>
+  `;
+
+  root.querySelectorAll('[data-acc]').forEach(btn => btn.onclick = () => {
+    selectedAccount = btn.dataset.acc;
+    root.querySelectorAll('[data-acc]').forEach(b => b.className = b.className.replace('border-primary bg-primary-light', 'border-hairline bg-surface'));
+    btn.className = btn.className.replace('border-hairline bg-surface', 'border-primary bg-primary-light');
+  });
+
+  const seg = root.querySelector('#seg-thumb');
+  root.querySelectorAll('[data-type]').forEach(btn => btn.onclick = () => {
+    txType = btn.dataset.type;
+    seg.style.transform = txType === 'expense' ? 'translateX(0%)' : 'translateX(100%)';
+    seg.className = seg.className.replace(/bg-\w+/, txType === 'expense' ? 'bg-danger' : 'bg-success');
+    root.querySelectorAll('[data-type]').forEach(b => b.classList.remove('text-white'));
+    btn.classList.add('text-white');
+  });
+
+  function renderQuickCats() {
+    const wrap = root.querySelector('#quick-cats');
+    wrap.innerHTML = quickButtons.map((q, i) => `
+      <span class="inline-flex items-center gap-1 pop-in">
+        <button data-qidx="${i}" class="press text-xs font-medium px-3 py-1.5 rounded-full ${editingQuick ? 'bg-hairline text-muted' : 'bg-hairline'}" ${editingQuick ? 'disabled' : ''}>${q.label}</button>
+        ${editingQuick ? `<button data-qdel="${i}" class="press w-6 h-6 rounded-full bg-danger-light text-danger flex items-center justify-center text-xs font-semibold">×</button>` : ''}
+      </span>
+    `).join('') + (editingQuick ? `<button id="quick-add-open" class="press text-xs font-medium px-3 py-1.5 rounded-full border border-dashed border-primary text-primary">+ เพิ่ม</button>` : '');
+
+    if (!editingQuick) {
+      wrap.querySelectorAll('[data-qidx]').forEach(btn => btn.onclick = () => {
+        const q = quickButtons[btn.dataset.qidx];
+        root.querySelector(`[data-type="${q.type}"]`).click();
+        root.querySelector('#tx-category').value = q.category;
+      });
+    } else {
+      wrap.querySelectorAll('[data-qdel]').forEach(btn => btn.onclick = () => {
+        quickButtons.splice(btn.dataset.qdel, 1);
+        saveQuickCats(quickButtons);
+        renderQuickCats();
+      });
+      const openBtn = wrap.querySelector('#quick-add-open');
+      if (openBtn) openBtn.onclick = () => root.querySelector('#quick-add-form').classList.remove('hidden');
+    }
+  }
+  renderQuickCats();
+
+  let qcType = 'expense';
+  root.querySelectorAll('.qc-type-btn').forEach(btn => btn.onclick = () => {
+    qcType = btn.dataset.qctype;
+    root.querySelectorAll('.qc-type-btn').forEach(b => { b.classList.remove('bg-danger', 'bg-success', 'text-white'); b.classList.add('text-ink'); });
+    btn.classList.remove('text-ink');
+    btn.classList.add(qcType === 'expense' ? 'bg-danger' : 'bg-success', 'text-white');
+  });
+  root.querySelector('#qc-save').onclick = () => {
+    const label = root.querySelector('#qc-label').value.trim();
+    const category = root.querySelector('#qc-category').value.trim();
+    if (!label || !category) return toast('กรอกชื่อปุ่มและหมวดหมู่ให้ครบ', 'error');
+    quickButtons.push({ label, type: qcType, category });
+    saveQuickCats(quickButtons);
+    root.querySelector('#qc-label').value = '';
+    root.querySelector('#qc-category').value = '';
+    root.querySelector('#quick-add-form').classList.add('hidden');
+    toast('เพิ่มรายการลัดสำเร็จ ✓', 'success');
+    renderQuickCats();
+  };
+  root.querySelector('#quick-edit-toggle').onclick = () => {
+    editingQuick = !editingQuick;
+    root.querySelector('#quick-edit-label').textContent = editingQuick ? 'เสร็จสิ้น' : 'ปรับแต่ง';
+    if (!editingQuick) root.querySelector('#quick-add-form').classList.add('hidden');
+    renderQuickCats();
+  };
+
+  const txSaveBtn = root.querySelector('#tx-save');
+  txSaveBtn.onclick = async () => {
+    const amount = parseFloat(root.querySelector('#tx-amount').value);
+    const category = root.querySelector('#tx-category').value.trim();
+    const note = root.querySelector('#tx-note').value.trim();
+    if (!amount || amount <= 0) return toast('กรุณาใส่จำนวนเงิน', 'error');
+    if (!category) return toast('กรุณาใส่หมวดหมู่', 'error');
+    if (txSaveBtn.disabled) return; // guard against double-tap creating a duplicate transaction
+    txSaveBtn.disabled = true;
+    try {
+      await DB.addTransaction({ account_id: selectedAccount, type: txType, category, amount, note });
+      toast('บันทึกรายการสำเร็จ ✓', 'success');
+      go('finance');
+    } catch (e) {
+      toast('บันทึกไม่สำเร็จ: ' + e.message, 'error');
+      txSaveBtn.disabled = false;
+    }
+  };
+
+  root.querySelector('#cash-recon').onclick = async () => {
+    const actual = parseFloat(root.querySelector('#cash-actual').value);
+    if (isNaN(actual)) return toast('กรุณาใส่จำนวนเงินที่นับได้', 'error');
+    const acc = accounts.find(a => a.id === selectedAccount);
+    const diff = actual - acc.balance;
+    if (diff === 0) return toast('ยอดตรงกันอยู่แล้ว ✓', 'success');
+    try {
+      await DB.addTransaction({ account_id: selectedAccount, type: diff > 0 ? 'income' : 'expense', category: 'กระทบยอดเงินสด', amount: Math.abs(diff), note: 'ปรับยอดให้ตรงกับเงินจริง' });
+      toast(`ปรับยอด ${diff > 0 ? '+' : ''}฿${fmtMoney(diff)} สำเร็จ`, 'success');
+      go('finance');
+    } catch (e) { toast('ทำรายการไม่สำเร็จ: ' + e.message, 'error'); }
+  };
+
+  try {
+    const txs = await DB.getRecentTransactions();
+    root.querySelector('#tx-list').innerHTML = txs.length === 0 ? `<p class="text-sm text-muted text-center py-6">ยังไม่มีรายการ</p>` : txs.map(t => `
+      <div class="bg-surface border border-hairline rounded-xl px-4 py-3 flex items-center justify-between">
+        <div>
+          <p class="text-sm font-medium">${t.category}</p>
+          <p class="text-xs text-muted">${new Date(t.created_at).toLocaleDateString('th-TH', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' })}</p>
+        </div>
+        <span class="font-display font-semibold tnum ${t.type === 'income' ? 'text-success' : 'text-danger'}">${t.type === 'income' ? '+' : '−'}฿${fmtMoney(t.amount)}</span>
+      </div>`).join('');
+  } catch (e) { toast('โหลดรายการไม่สำเร็จ', 'error'); }
+}
+
+/* ============================================================
+   10) INVENTORY & SHELF SETUP
+   ============================================================ */
+function productRowHtml(p) {
+  const hasCost = p.cost_price != null;
+  const profitPerUnit = hasCost ? p.selling_price - p.cost_price : null;
+  return `
+  <div class="bg-surface border border-hairline rounded-xl px-4 py-3" data-product-row="${p.id}">
+    <div class="flex items-center justify-between">
+      <div class="min-w-0">
+        <p class="text-sm font-medium truncate">${p.name}</p>
+        <p class="text-xs text-muted">ขาย ฿${fmtMoney(p.selling_price)} · แจ้งเตือนที่ ≤${p.min_stock_alert}</p>
+        ${hasCost
+          ? `<p class="text-xs mt-1"><span class="text-muted">ต้นทุน ฿${fmtMoney(p.cost_price)}/ชิ้น</span> · <span class="font-medium ${profitPerUnit >= 0 ? 'text-primary' : 'text-danger'}">กำไร ฿${fmtMoney(profitPerUnit)}/ชิ้น</span></p>`
+          : `<p class="text-xs mt-1 text-accent-dark">ยังไม่ได้ใส่ต้นทุน</p>`}
+      </div>
+      <button data-restock-toggle="${p.id}" class="press shrink-0 text-xs font-medium px-3 py-1.5 rounded-full bg-primary-light text-primary whitespace-nowrap">+ เติมต้นทุน</button>
+    </div>
+    <div data-restock-form="${p.id}" class="hidden mt-3 pt-3 border-t border-hairline space-y-2">
+      <div class="flex gap-2">
+        <input data-rc-total="${p.id}" type="number" inputmode="decimal" placeholder="ราคาต้นทุนรวม" class="flex-1 text-sm bg-bg rounded-xl px-3 py-2 outline-none">
+        <input data-rc-qty="${p.id}" type="number" inputmode="numeric" placeholder="จำนวนที่ซื้อ" class="flex-1 text-sm bg-bg rounded-xl px-3 py-2 outline-none">
+      </div>
+      <div data-rc-calc="${p.id}" class="hidden text-xs text-primary bg-primary-light rounded-xl p-2.5 space-y-0.5"></div>
+      <button data-rc-save="${p.id}" class="press w-full bg-primary text-white text-sm font-medium py-2 rounded-xl">บันทึกต้นทุนล็อตนี้</button>
+    </div>
+  </div>`;
+}
+
+function bindProductRestockForms(body, products) {
+  body.querySelectorAll('[data-restock-toggle]').forEach(btn => {
+    btn.onclick = () => {
+      const id = btn.dataset.restockToggle;
+      body.querySelector(`[data-restock-form="${id}"]`).classList.toggle('hidden');
+    };
+  });
+  products.forEach(p => {
+    const totalInput = body.querySelector(`[data-rc-total="${p.id}"]`);
+    const qtyInput = body.querySelector(`[data-rc-qty="${p.id}"]`);
+    const calcBox = body.querySelector(`[data-rc-calc="${p.id}"]`);
+    function update() {
+      const total = parseFloat(totalInput.value) || 0;
+      const qty = parseInt(qtyInput.value, 10) || 0;
+      if (total > 0 && qty > 0) {
+        const costPerUnit = total / qty;
+        const profitPerUnit = p.selling_price - costPerUnit;
+        const totalProfit = profitPerUnit * qty;
+        calcBox.classList.remove('hidden');
+        calcBox.innerHTML = `
+          <p>ต้นทุนต่อชิ้น: <span class="font-display font-semibold tnum">฿${fmtMoney(costPerUnit)}</span></p>
+          <p>กำไรต่อชิ้น: <span class="font-display font-semibold tnum ${profitPerUnit >= 0 ? '' : 'text-danger'}">฿${fmtMoney(profitPerUnit)}</span></p>
+          <p>กำไรรวมล็อตนี้ (${qty} ชิ้น): <span class="font-display font-semibold tnum ${totalProfit >= 0 ? '' : 'text-danger'}">฿${fmtMoney(totalProfit)}</span></p>
+        `;
+      } else {
+        calcBox.classList.add('hidden');
+      }
+    }
+    totalInput.addEventListener('input', update);
+    qtyInput.addEventListener('input', update);
+    body.querySelector(`[data-rc-save="${p.id}"]`).onclick = async () => {
+      const total = parseFloat(totalInput.value);
+      const qty = parseInt(qtyInput.value, 10);
+      if (!total || !qty) return toast('กรอกราคาต้นทุนรวมและจำนวนให้ครบ', 'error');
+      await DB.addStockBatch(p.id, total / qty, qty);
+      toast('บันทึกต้นทุนล็อตใหม่สำเร็จ ✓', 'success');
+      go('inventory', { tab: 'products' });
+    };
+  });
+}
+
+async function renderInventory(root, state) {
+  const tab = state.tab || 'buildings';
+  root.innerHTML = `
+    <h1 class="font-display text-2xl font-semibold mb-4">จัดการข้อมูล</h1>
+    <div class="flex gap-2 mb-4 overflow-x-auto" id="inv-tabs">
+      ${[['buildings','ตึก/ชั้น'],['products','สินค้า'],['assign','จัดวางสินค้า']].map(([k,l]) => `
+        <button data-tab="${k}" class="press whitespace-nowrap text-sm font-medium px-4 py-2 rounded-full ${tab===k?'bg-primary text-white':'bg-surface border border-hairline text-muted'}">${l}</button>`).join('')}
+      <button data-calc-tab class="press whitespace-nowrap text-sm font-medium px-4 py-2 rounded-full bg-surface border border-dashed border-primary text-primary flex items-center gap-1">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8M8 10h.01M12 10h.01M16 10h.01"/></svg>
+        คำนวณ
+      </button>
+    </div>
+    <div id="inv-body">${skeleton('h-24')}</div>
+  `;
+  root.querySelectorAll('#inv-tabs button[data-tab]').forEach(b => b.onclick = () => go('inventory', { tab: b.dataset.tab }));
+  root.querySelector('[data-calc-tab]').onclick = () => go('calculator', { from: 'inventory' });
+
+  const body = root.querySelector('#inv-body');
+
+  if (tab === 'buildings') {
+    const buildings = await DB.getBuildings();
+    // Was: sequential `for...of` + `await`, firing one request per building
+    // one at a time (N+1 round trips). Fetch all shelves concurrently instead.
+    const shelvesByB = {};
+    const shelvesList = await Promise.all(buildings.map(b => DB.getShelves(b.id)));
+    buildings.forEach((b, i) => { shelvesByB[b.id] = shelvesList[i]; });
+    body.innerHTML = `
+      <div class="bg-surface border border-hairline rounded-2xl p-4 mb-4">
+        <p class="font-display font-medium text-sm mb-2">เพิ่มตึกใหม่</p>
+        <div class="flex gap-2">
+          <input id="new-building" placeholder="ชื่อตึก เช่น ตึก C" class="flex-1 text-sm bg-bg rounded-xl px-3 py-2.5 outline-none">
+          <button id="add-building" class="press bg-primary text-white px-4 rounded-xl font-medium text-sm">เพิ่ม</button>
+        </div>
+      </div>
+      <div class="space-y-3">
+        ${buildings.map(b => `
+          <div class="bg-surface border border-hairline rounded-2xl p-4">
+            <div class="flex items-center justify-between mb-3">
+              <p class="font-display font-semibold">${b.name}</p>
+              <span class="text-xs text-muted">${shelvesByB[b.id].length} ชั้น</span>
+            </div>
+            <div class="flex flex-wrap gap-2 mb-3">
+              ${shelvesByB[b.id].map(s => `<span class="text-xs bg-hairline px-2.5 py-1 rounded-full">ชั้น ${s.floor}</span>`).join('') || '<span class="text-xs text-muted">ยังไม่มีชั้น</span>'}
+            </div>
+            <div class="flex gap-2">
+              <input data-newfloor="${b.id}" type="number" placeholder="เลขชั้นใหม่" class="flex-1 text-sm bg-bg rounded-xl px-3 py-2 outline-none">
+              <button data-addfloor="${b.id}" class="press bg-primary-light text-primary px-3 rounded-xl text-sm font-medium">+ เพิ่มชั้น</button>
+            </div>
+          </div>`).join('')}
+      </div>
+    `;
+    const addBuildingBtn = body.querySelector('#add-building');
+    addBuildingBtn.onclick = async () => {
+      const val = body.querySelector('#new-building').value.trim();
+      if (!val || addBuildingBtn.disabled) return;
+      addBuildingBtn.disabled = true;
+      try {
+        await DB.addBuilding(val);
+        toast('เพิ่มตึกสำเร็จ ✓', 'success');
+        go('inventory', { tab: 'buildings' });
+      } catch (e) {
+        toast('เพิ่มตึกไม่สำเร็จ: ' + e.message, 'error');
+        addBuildingBtn.disabled = false;
+      }
+    };
+    body.querySelectorAll('[data-addfloor]').forEach(btn => btn.onclick = async () => {
+      const input = body.querySelector(`[data-newfloor="${btn.dataset.addfloor}"]`);
+      const floor = parseInt(input.value, 10);
+      if (!floor) return toast('ใส่เลขชั้น', 'error');
+      if (btn.disabled) return;
+      btn.disabled = true;
+      try {
+        await DB.addShelf(btn.dataset.addfloor, floor);
+        toast('เพิ่มชั้นสำเร็จ ✓', 'success');
+        go('inventory', { tab: 'buildings' });
+      } catch (e) {
+        toast('เพิ่มชั้นไม่สำเร็จ: ' + e.message, 'error');
+        btn.disabled = false;
+      }
+    });
+  }
+
+  if (tab === 'products') {
+    const products = await DB.getProductsWithCost();
+    body.innerHTML = `
+      <div class="bg-surface border border-hairline rounded-2xl p-4 mb-4 space-y-2">
+        <p class="font-display font-medium text-sm mb-1">เพิ่มสินค้าใหม่</p>
+        <input id="p-name" placeholder="ชื่อสินค้า เช่น ทิชชู่" class="w-full text-sm bg-bg rounded-xl px-3 py-2.5 outline-none">
+        <input id="p-price" type="number" inputmode="decimal" placeholder="ราคาขาย (ต่อชิ้น)" class="w-full text-sm bg-bg rounded-xl px-3 py-2.5 outline-none">
+        <p class="text-xs text-muted pt-1">ต้นทุนที่ซื้อมา (ไม่บังคับ แต่ช่วยคำนวณกำไรให้อัตโนมัติ)</p>
+        <div class="flex gap-2">
+          <input id="p-cost-total" type="number" inputmode="decimal" placeholder="ราคาต้นทุนรวม เช่น 164" class="flex-1 text-sm bg-bg rounded-xl px-3 py-2.5 outline-none">
+          <input id="p-cost-qty" type="number" inputmode="numeric" placeholder="จำนวนที่ซื้อ เช่น 20" class="flex-1 text-sm bg-bg rounded-xl px-3 py-2.5 outline-none">
+        </div>
+        <div id="p-calc" class="hidden bg-primary-light rounded-xl p-3 text-sm text-primary space-y-0.5"></div>
+        <input id="p-min" type="number" placeholder="แจ้งเตือนเมื่อเหลือ ≤ (ค่าเริ่มต้น 5)" class="w-full text-sm bg-bg rounded-xl px-3 py-2.5 outline-none">
+        <button id="add-product" class="press w-full bg-primary text-white py-2.5 rounded-xl font-medium text-sm">เพิ่มสินค้า</button>
+      </div>
+      <div class="space-y-2" id="product-list">
+        ${products.map(p => productRowHtml(p)).join('')}
+      </div>
+    `;
+
+    function readCalc() {
+      const price = parseFloat(body.querySelector('#p-price').value) || 0;
+      const costTotal = parseFloat(body.querySelector('#p-cost-total').value) || 0;
+      const qty = parseInt(body.querySelector('#p-cost-qty').value, 10) || 0;
+      const calcBox = body.querySelector('#p-calc');
+      if (costTotal > 0 && qty > 0) {
+        const costPerUnit = costTotal / qty;
+        const profitPerUnit = price - costPerUnit;
+        const totalProfit = profitPerUnit * qty;
+        calcBox.classList.remove('hidden');
+        calcBox.innerHTML = `
+          <p>ต้นทุนต่อชิ้น: <span class="font-display font-semibold tnum">฿${fmtMoney(costPerUnit)}</span></p>
+          <p>กำไรต่อชิ้น: <span class="font-display font-semibold tnum ${profitPerUnit >= 0 ? 'text-primary' : 'text-danger'}">฿${fmtMoney(profitPerUnit)}</span></p>
+          <p>กำไรรวมทั้งล็อต (${qty} ชิ้น): <span class="font-display font-semibold tnum ${totalProfit >= 0 ? 'text-primary' : 'text-danger'}">฿${fmtMoney(totalProfit)}</span></p>
+        `;
+      } else {
+        calcBox.classList.add('hidden');
+      }
+    }
+    ['#p-price', '#p-cost-total', '#p-cost-qty'].forEach(sel => body.querySelector(sel).addEventListener('input', readCalc));
+
+    const addProductBtn = body.querySelector('#add-product');
+    addProductBtn.onclick = async () => {
+      const name = body.querySelector('#p-name').value.trim();
+      const price = parseFloat(body.querySelector('#p-price').value);
+      const min = parseInt(body.querySelector('#p-min').value, 10) || 5;
+      const costTotal = parseFloat(body.querySelector('#p-cost-total').value) || 0;
+      const qty = parseInt(body.querySelector('#p-cost-qty').value, 10) || 0;
+      if (!name || !price) return toast('กรอกชื่อและราคาขายให้ครบ', 'error');
+      if (addProductBtn.disabled) return; // guard against double-tap creating a duplicate product
+      addProductBtn.disabled = true;
+      try {
+        const product = await DB.addProduct({ name, selling_price: price, min_stock_alert: min, image_url: null });
+        if (costTotal > 0 && qty > 0) {
+          await DB.addStockBatch(product.id, costTotal / qty, qty);
+        }
+        toast('เพิ่มสินค้าสำเร็จ ✓', 'success');
+        go('inventory', { tab: 'products' });
+      } catch (e) {
+        toast('เพิ่มสินค้าไม่สำเร็จ: ' + e.message, 'error');
+        addProductBtn.disabled = false;
+      }
+    };
+
+    bindProductRestockForms(body, products);
+  }
+
+  if (tab === 'assign') {
+    const [buildings, products] = await Promise.all([DB.getBuildings(), DB.getProducts()]);
+    body.innerHTML = `
+      <div class="bg-surface border border-hairline rounded-2xl p-4 space-y-3">
+        <p class="font-display font-medium text-sm">จัดวางสินค้าเข้าชั้น</p>
+        <select id="a-building" class="w-full text-sm bg-bg rounded-xl px-3 py-2.5 outline-none">
+          ${buildings.map(b => `<option value="${b.id}">${b.name}</option>`).join('')}
+        </select>
+        <select id="a-shelf" class="w-full text-sm bg-bg rounded-xl px-3 py-2.5 outline-none"></select>
+        <select id="a-product" class="w-full text-sm bg-bg rounded-xl px-3 py-2.5 outline-none">
+          ${products.map(p => `<option value="${p.id}">${p.name}</option>`).join('')}
+        </select>
+        <input id="a-qty" type="number" placeholder="จำนวนเริ่มต้น" class="w-full text-sm bg-bg rounded-xl px-3 py-2.5 outline-none">
+        <button id="a-save" class="press w-full bg-primary text-white py-2.5 rounded-xl font-medium text-sm">บันทึกการจัดวาง</button>
+      </div>
+    `;
+    async function loadShelves() {
+      const shelves = await DB.getShelves(body.querySelector('#a-building').value);
+      body.querySelector('#a-shelf').innerHTML = shelves.map(s => `<option value="${s.id}">ชั้น ${s.floor}</option>`).join('') || '<option disabled>ไม่มีชั้น</option>';
+    }
+    body.querySelector('#a-building').onchange = loadShelves;
+    await loadShelves();
+    body.querySelector('#a-save').onclick = async () => {
+      const shelfId = body.querySelector('#a-shelf').value;
+      const productId = body.querySelector('#a-product').value;
+      const qty = parseInt(body.querySelector('#a-qty').value, 10) || 0;
+      if (!shelfId) return toast('ไม่มีชั้นให้เลือก', 'error');
+      await DB.assignProductToShelf(shelfId, productId, qty);
+      toast('จัดวางสินค้าสำเร็จ ✓', 'success');
+    };
+  }
+}
+
+/* ============================================================
+   11) STANDALONE COST / PROFIT CALCULATOR
+   คำนวณเฉยๆ ระหว่างซื้อของ ไม่บันทึกเข้าระบบ / ไม่แตะ DB
+   รายการเปรียบเทียบเก็บไว้ใน localStorage เท่านั้น (แยกจากสินค้าในระบบ)
+   ============================================================ */
+const CALC_SCRATCH_KEY = 'cost_calc_scratch';
+function loadCalcScratch() { try { return JSON.parse(localStorage.getItem(CALC_SCRATCH_KEY)) || []; } catch { return []; } }
+function saveCalcScratch(list) { localStorage.setItem(CALC_SCRATCH_KEY, JSON.stringify(list)); }
+
+function renderCalculator(root, state) {
+  let scratch = loadCalcScratch();
+
+  root.innerHTML = `
+    <button id="calc-back" class="press text-sm text-muted flex items-center gap-1 mb-3">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg> กลับ
+    </button>
+    <h1 class="font-display text-2xl font-semibold mb-1">คำนวณต้นทุน-กำไร</h1>
+    <p class="text-muted text-sm mb-4">คำนวณเฉยๆ ตอนซื้อของ ไม่บันทึกเข้าระบบ</p>
+
+    <div class="bg-surface border border-hairline rounded-2xl p-4 mb-4 space-y-3">
+      <input id="c-name" placeholder="ชื่อสินค้า (ไม่บังคับ) เช่น ทิชชู่" class="w-full text-sm bg-bg rounded-xl px-3 py-2.5 outline-none">
+      <div>
+        <label class="text-xs text-muted mb-1 block">ราคาขายต่อชิ้น</label>
+        <input id="c-price" type="number" inputmode="decimal" placeholder="เช่น 25" class="w-full font-display text-xl font-semibold tnum bg-bg rounded-xl px-3 py-2.5 outline-none">
+      </div>
+      <div class="flex gap-2">
+        <div class="flex-1">
+          <label class="text-xs text-muted mb-1 block">ราคาต้นทุนรวม</label>
+          <input id="c-cost-total" type="number" inputmode="decimal" placeholder="เช่น 164" class="w-full text-sm bg-bg rounded-xl px-3 py-2.5 outline-none">
+        </div>
+        <div class="flex-1">
+          <label class="text-xs text-muted mb-1 block">จำนวนที่ซื้อ</label>
+          <input id="c-qty" type="number" inputmode="numeric" placeholder="เช่น 20" class="w-full text-sm bg-bg rounded-xl px-3 py-2.5 outline-none">
+        </div>
+      </div>
+
+      <div id="c-result" class="hidden bg-primary-light rounded-2xl p-4 space-y-2 pop-in">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <p class="text-xs text-primary/70">ต้นทุนต่อชิ้น</p>
+            <p class="font-display font-semibold text-lg tnum text-primary" id="r-cost-unit">-</p>
+          </div>
+          <div>
+            <p class="text-xs text-primary/70">กำไรต่อชิ้น</p>
+            <p class="font-display font-semibold text-lg tnum" id="r-profit-unit">-</p>
+          </div>
+          <div>
+            <p class="text-xs text-primary/70">% กำไรต่อทุน (Markup)</p>
+            <p class="font-display font-semibold text-lg tnum" id="r-markup">-</p>
+          </div>
+          <div>
+            <p class="text-xs text-primary/70">% กำไรต่อราคาขาย (Margin)</p>
+            <p class="font-display font-semibold text-lg tnum" id="r-margin">-</p>
+          </div>
+        </div>
+        <div class="pt-2 border-t border-primary/15">
+          <p class="text-xs text-primary/70">กำไรรวมทั้งล็อต</p>
+          <p class="font-display font-semibold text-2xl tnum text-primary" id="r-total-profit">-</p>
+        </div>
+      </div>
+
+      <div class="flex gap-2">
+        <button id="c-clear" class="press flex-1 bg-hairline text-ink py-2.5 rounded-xl font-medium text-sm">ล้างค่า</button>
+        <button id="c-add" disabled class="press flex-[2] bg-primary text-white py-2.5 rounded-xl font-medium text-sm disabled:opacity-40">+ เพิ่มลงรายการเปรียบเทียบ</button>
+      </div>
+    </div>
+
+    <details class="bg-surface border border-hairline rounded-2xl p-4 mb-4">
+      <summary class="font-display font-semibold text-sm cursor-pointer">🎯 อยากได้กำไรกี่% ควรตั้งราคาขายเท่าไหร่</summary>
+      <div class="mt-3 space-y-3">
+        <div class="flex gap-2">
+          <div class="flex-1">
+            <label class="text-xs text-muted mb-1 block">ต้นทุนต่อชิ้น</label>
+            <input id="rv-cost" type="number" inputmode="decimal" placeholder="เช่น 8.2" class="w-full text-sm bg-bg rounded-xl px-3 py-2.5 outline-none">
+          </div>
+          <div class="flex-1">
+            <label class="text-xs text-muted mb-1 block">กำไรที่ต้องการ (%)</label>
+            <input id="rv-margin" type="number" inputmode="decimal" placeholder="เช่น 50" class="w-full text-sm bg-bg rounded-xl px-3 py-2.5 outline-none">
+          </div>
+        </div>
+        <div id="rv-result" class="hidden bg-accent-light rounded-xl p-3 text-sm text-accent-dark">
+          ควรตั้งราคาขายที่ <span class="font-display font-semibold tnum" id="rv-price">-</span> ต่อชิ้น
+        </div>
+      </div>
+    </details>
+
+    ${scratch.length > 0 ? `
+    <div class="flex items-center justify-between mb-2">
+      <h2 class="font-display font-semibold text-base">รายการเปรียบเทียบ (${scratch.length})</h2>
+      <button id="c-clear-all" class="press text-xs text-danger font-medium">ล้างทั้งหมด</button>
+    </div>
+    <div id="c-scratch-list" class="space-y-2 mb-4"></div>
+    <div class="bg-ink text-white rounded-2xl p-4 flex items-center justify-between mb-6">
+      <div>
+        <p class="text-xs text-white/60">รวมเงินลงทุนทั้งหมด</p>
+        <p class="font-display font-semibold text-lg tnum" id="c-sum-cost">-</p>
+      </div>
+      <div class="text-right">
+        <p class="text-xs text-white/60">รวมกำไรที่คาดว่าจะได้</p>
+        <p class="font-display font-semibold text-lg tnum text-success" id="c-sum-profit">-</p>
+      </div>
+    </div>` : ''}
+  `;
+
+  root.querySelector('#calc-back').onclick = () => go(state.from === 'inventory' ? 'inventory' : 'dashboard');
+
+  const priceEl = root.querySelector('#c-price');
+  const totalEl = root.querySelector('#c-cost-total');
+  const qtyEl = root.querySelector('#c-qty');
+  const resultBox = root.querySelector('#c-result');
+  const addBtn = root.querySelector('#c-add');
+
+  let lastCalc = null;
+  function computeAndRender() {
+    const price = parseFloat(priceEl.value) || 0;
+    const total = parseFloat(totalEl.value) || 0;
+    const qty = parseInt(qtyEl.value, 10) || 0;
+    if (total > 0 && qty > 0 && price >= 0) {
+      const costUnit = total / qty;
+      const profitUnit = price - costUnit;
+      const markup = costUnit > 0 ? (profitUnit / costUnit) * 100 : 0;
+      const margin = price > 0 ? (profitUnit / price) * 100 : 0;
+      const totalProfit = profitUnit * qty;
+      lastCalc = { price, total, qty, costUnit, profitUnit, totalProfit };
+
+      resultBox.classList.remove('hidden');
+      root.querySelector('#r-cost-unit').textContent = `฿${fmtMoney(costUnit)}`;
+      const profitColor = profitUnit >= 0 ? 'text-primary' : 'text-danger';
+      const profitEl = root.querySelector('#r-profit-unit'); profitEl.textContent = `฿${fmtMoney(profitUnit)}`; profitEl.className = `font-display font-semibold text-lg tnum ${profitColor}`;
+      root.querySelector('#r-markup').textContent = `${fmtMoney(markup)}%`;
+      root.querySelector('#r-margin').textContent = `${fmtMoney(margin)}%`;
+      const totalEl2 = root.querySelector('#r-total-profit'); totalEl2.textContent = `฿${fmtMoney(totalProfit)}`; totalEl2.className = `font-display font-semibold text-2xl tnum ${profitUnit >= 0 ? 'text-primary' : 'text-danger'}`;
+      addBtn.disabled = false;
+      root.querySelector('#rv-cost').value = costUnit.toFixed(2);
+    } else {
+      resultBox.classList.add('hidden');
+      addBtn.disabled = true;
+      lastCalc = null;
+    }
+  }
+  [priceEl, totalEl, qtyEl].forEach(el => el.addEventListener('input', computeAndRender));
+
+  root.querySelector('#c-clear').onclick = () => {
+    root.querySelector('#c-name').value = '';
+    priceEl.value = ''; totalEl.value = ''; qtyEl.value = '';
+    computeAndRender();
+  };
+
+  addBtn.onclick = () => {
+    if (!lastCalc) return;
+    const name = root.querySelector('#c-name').value.trim() || 'สินค้าไม่มีชื่อ';
+    scratch.push({ id: uid('calc'), name, ...lastCalc });
+    saveCalcScratch(scratch);
+    toast('เพิ่มลงรายการเปรียบเทียบแล้ว ✓', 'success');
+    go('calculator', state);
+  };
+
+  // reverse calculator: desired margin over cost -> suggested price
+  const rvCost = root.querySelector('#rv-cost');
+  const rvMargin = root.querySelector('#rv-margin');
+  const rvResult = root.querySelector('#rv-result');
+  function computeReverse() {
+    const cost = parseFloat(rvCost.value) || 0;
+    const marginPct = parseFloat(rvMargin.value);
+    if (cost > 0 && !isNaN(marginPct)) {
+      const suggested = cost * (1 + marginPct / 100);
+      rvResult.classList.remove('hidden');
+      root.querySelector('#rv-price').textContent = `฿${fmtMoney(suggested)}`;
+    } else {
+      rvResult.classList.add('hidden');
+    }
+  }
+  rvCost.addEventListener('input', computeReverse);
+  rvMargin.addEventListener('input', computeReverse);
+
+  // scratch list
+  if (scratch.length > 0) {
+    const listEl = root.querySelector('#c-scratch-list');
+    listEl.innerHTML = scratch.map(s => `
+      <div class="bg-surface border border-hairline rounded-xl px-4 py-3 flex items-center justify-between">
+        <div class="min-w-0">
+          <p class="text-sm font-medium truncate">${s.name}</p>
+          <p class="text-xs text-muted">ทุน ฿${fmtMoney(s.costUnit)}/ชิ้น · ${s.qty} ชิ้น · รวม ฿${fmtMoney(s.total)}</p>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+          <span class="font-display font-semibold text-sm tnum ${s.profitUnit >= 0 ? 'text-primary' : 'text-danger'}">+฿${fmtMoney(s.totalProfit)}</span>
+          <button data-del-calc="${s.id}" class="press w-7 h-7 rounded-full bg-danger-light text-danger flex items-center justify-center text-sm">×</button>
+        </div>
+      </div>`).join('');
+    listEl.querySelectorAll('[data-del-calc]').forEach(btn => btn.onclick = () => {
+      scratch = scratch.filter(s => s.id !== btn.dataset.delCalc);
+      saveCalcScratch(scratch);
+      go('calculator', state);
+    });
+    const sumCost = scratch.reduce((s, x) => s + x.total, 0);
+    const sumProfit = scratch.reduce((s, x) => s + x.totalProfit, 0);
+    root.querySelector('#c-sum-cost').textContent = `฿${fmtMoney(sumCost)}`;
+    root.querySelector('#c-sum-profit').textContent = `฿${fmtMoney(sumProfit)}`;
+    root.querySelector('#c-clear-all').onclick = () => {
+      scratch = [];
+      saveCalcScratch(scratch);
+      go('calculator', state);
+    };
+  }
+}
+
+/* ============================================================
+   12) INIT
+   ============================================================ */
+if (!CONFIGURED) {
+  document.getElementById('app').innerHTML = `
+    <div class="bg-danger-light border border-danger/30 text-danger rounded-2xl p-4 text-sm">
+      ยังไม่ได้ตั้งค่า Supabase — กรุณาใส่ค่า <b>SUPABASE_URL</b> และ <b>SUPABASE_ANON_KEY</b>
+      ที่ด้านบนของไฟล์ก่อนใช้งานจริง
+    </div>`;
+  toast('ยังไม่ได้ตั้งค่า Supabase', 'error');
+} else {
+  updateNetBadge();
+  go('dashboard');
+  if (navigator.onLine) syncQueue();
+}
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+</script>
+</body>
+</html>
