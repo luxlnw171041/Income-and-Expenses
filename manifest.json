@@ -1,5 +1,5 @@
 {
-  "name": "เมียน่ารักที่สุดในโลกกกก",
+  "name": "ต่ายต้องรอด",
   "short_name": "ต่ายต้องรอด",
   "description": "ระบบจัดการร้านค้าแบบ Self-Service / Honesty Shop นับสต็อก บันทึกรายรับ-รายจ่าย",
   "start_url": "./index.html",
@@ -13,11 +13,6 @@
     {
       "src": "icons/icon-192x192.png",
       "sizes": "192x192",
-      "type": "image/png"
-    },
-    {
-      "src": "icons/icon-512x512.png",
-      "sizes": "512x512",
       "type": "image/png"
     }
   ]

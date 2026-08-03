@@ -680,13 +680,32 @@ async function renderFinance(root) {
   root.innerHTML = `
     <h1 class="font-display text-2xl font-semibold mb-4">รายรับ-รายจ่าย</h1>
 
-    <div class="flex gap-2 mb-4" id="acc-pills">
-      ${accounts.map(a => `
-        <button data-acc="${a.id}" class="press flex-1 rounded-2xl border p-3 text-left ${a.id===selectedAccount?'border-primary bg-primary-light':'border-hairline bg-surface'}">
-          <p class="text-xs text-muted">${a.type === 'business' ? '🏪 ร้านค้า' : '👤 ส่วนตัว'}</p>
-          <p class="font-display font-semibold tnum">฿${fmtMoney(a.balance)}</p>
-        </button>`).join('')}
+  <!-- แยกเป็น 2 กลุ่ม: ร้านค้า กับ ส่วนตัว -->
+  <div class="space-y-3 mb-4">
+    <div>
+      <p class="text-xs font-semibold text-primary mb-1.5">🏪 บัญชีร้านค้า (Business)</p>
+      <div class="grid grid-cols-2 gap-2">
+        ${accounts.filter(a => a.type === 'business').map(a => `
+          <button data-acc="${a.id}" class="press rounded-2xl border p-3 text-left ${a.id===selectedAccount?'border-primary bg-primary-light':'border-hairline bg-surface'}">
+            <p class="text-xs text-muted truncate">${a.name}</p>
+            <p class="font-display font-semibold tnum text-sm">฿${fmtMoney(a.balance)}</p>
+          </button>
+        `).join('')}
+      </div>
     </div>
+
+    <div>
+      <p class="text-xs font-semibold text-muted mb-1.5">👤 บัญชีส่วนตัว (Personal)</p>
+      <div class="grid grid-cols-2 gap-2">
+        ${accounts.filter(a => a.type === 'personal').map(a => `
+          <button data-acc="${a.id}" class="press rounded-2xl border p-3 text-left ${a.id===selectedAccount?'border-primary bg-primary-light':'border-hairline bg-surface'}">
+            <p class="text-xs text-muted truncate">${a.name}</p>
+            <p class="font-display font-semibold tnum text-sm">฿${fmtMoney(a.balance)}</p>
+          </button>
+        `).join('')}
+      </div>
+    </div>
+  </div>
 
     <div class="bg-surface border border-hairline rounded-2xl p-4 mb-4">
       <div class="flex bg-bg rounded-full p-1 mb-4 relative">
