@@ -529,23 +529,25 @@
         if (error) throw error; return data;
       },
       async getProductsWithCost() {
-        // returns each product with its most recent cost_price + total remaining units across batches
-        const { data: products, error } = await supabase.from('products').select('*').order('name');
-        if (error) throw error;
-        const { data: batches, error: bErr } = await supabase.from('stock_batches').select('*').order('created_at', { ascending: true });
-        if (bErr) throw bErr;
-        // Group batches by product_id in a single pass (was: `batches.filter(...)` re-scanning
-        // the entire batches table once per product — O(products × batches), which gets slow
-        // fast as stock history grows).
-        const batchesByProduct = {};
-        for (const b of batches) (batchesByProduct[b.product_id] ??= []).push(b);
-        return products.map(p => {
-          const pBatches = batchesByProduct[p.id] || [];
-          const latest = pBatches[pBatches.length - 1];
-          const remaining_units = pBatches.reduce((s, b) => s + b.remaining_qty, 0);
-          return { ...p, cost_price: latest ? latest.cost_price : null, remaining_units };
-        });
-      },
+    const { data: products, error } = await supabase.from('products').select('*').order('name');
+    if (error) throw error;
+    
+    const { data: batches, error: bErr } = await supabase.from('stock_batches').select('*').order('created_at', { ascending: true });
+    if (bErr) throw bErr;
+    
+    const batchesByProduct = {};
+    for (const b of batches) (batchesByProduct[b.product_id] ??= []).push(b);
+    
+    return products.map(p => {
+      const pBatches = batchesByProduct[p.id] || [];
+      const latest = pBatches[pBatches.length - 1];
+      
+      // รวมยอดคงเหลือจากทุกๆ ล็อตการซื้อ (Batches) ที่ถูกหักลบอัตโนมัติจากหลังบ้านแล้ว
+      const remaining_units = pBatches.reduce((sum, b) => sum + b.remaining_qty, 0);
+      
+      return { ...p, cost_price: latest ? latest.cost_price : null, remaining_units };
+    });
+  },
       async assignProductToShelf(shelf_id, product_id, quantity) {
         const { data, error } = await supabase.from('product_shelves').upsert({ shelf_id, product_id, quantity }, { onConflict: 'shelf_id,product_id' }).select().single();
         if (error) throw error; return data;
@@ -901,44 +903,73 @@
     }
 
     async function saveAudit(root, state) {
-      const btn = root.querySelector('#save-audit');
-      const entries = Object.entries(countCart);
-      const accounts = await DB.getAccounts().catch(() => []);
-      const businessAccount = accounts.find(a => a.type === 'business') || accounts[0];
+  const btn = root.querySelector('#save-audit');
+  const entries = Object.entries(countCart);
+  const accounts = await DB.getAccounts().catch(() => []);
+  const businessAccount = accounts.find(a => a.type === 'business') || accounts[0];
 
-      // ค้นหารายการที่ "ของหาย" (actual < expected)
-      const lostItems = entries.filter(([psId, c]) => c.actual < c.expected);
+  // ค้นหารายการที่ "ของหาย" (actual < expected)
+  const lostItems = entries.filter(([psId, c]) => c.actual < c.expected);
 
-      // ฟังก์ชันตัวบันทึกข้อมูลหลัก
-      const executeSave = async (reasonPayloads = {}) => {
-        btn.disabled = true;
-        btn.innerHTML = `<span class="animate-spin inline-block w-5 h-5 border-2 border-white/40 border-t-white rounded-full"></span>`;
+  // ฟังก์ชันตัวบันทึกข้อมูลหลัก
+  const executeSave = async (reasonPayloads = {}) => {
+    btn.disabled = true;
+    btn.innerHTML = `<span class="animate-spin inline-block w-5 h-5 border-2 border-white/40 border-t-white rounded-full"></span>`;
+    
+    let hasError = false;
+    let errorMessage = '';
 
-        const results = await Promise.allSettled(entries.map(([psId, c]) => {
-          const payload = {
-            product_shelf_id: psId, expected_qty: c.expected, actual_qty: c.actual,
-            cost_price: c.cost_price, product_name: c.product.name, account_id: businessAccount?.id,
-            reason: reasonPayloads[psId] || null // แนบเหตุผลไปให้หลังบ้าน
-          };
-          if (!navigator.onLine) { pushToQueue({ payload }); return Promise.resolve('offline'); }
-          return DB.processStockAudit(payload).then(() => 'ok').catch(() => { pushToQueue({ payload }); return 'offline'; });
-        }));
-
-        let okCount = results.filter(r => r.status === 'fulfilled' && r.value === 'ok').length;
-        let offlineCount = results.filter(r => r.status === 'fulfilled' && r.value === 'offline').length;
-        updateNetBadge();
-
-        if (offlineCount > 0 && okCount === 0) toast(`บันทึกในเครื่องแล้ว (รอซิงค์)`, 'offline');
-        else if (offlineCount > 0) toast(`บันทึกแล้ว ${okCount} รายการ, รอซิงค์ ${offlineCount}`, 'info');
-        else toast('บันทึกการนับสต็อกสำเร็จ ✓', 'success');
-        go('dashboard');
+    const results = await Promise.allSettled(entries.map(async ([psId, c]) => {
+      const payload = {
+        product_shelf_id: psId, expected_qty: c.expected, actual_qty: c.actual,
+        cost_price: c.cost_price, product_name: c.product.name, account_id: businessAccount?.id,
+        reason: reasonPayloads[psId] || null
       };
+      
+      // 1. ถ้าไม่มีเน็ต (แบบออฟไลน์จริงๆ) ให้ลงคิว
+      if (!navigator.onLine) { 
+        pushToQueue({ payload }); 
+        return 'offline'; 
+      }
+      
+      // 2. ถ้ามีเน็ต ให้ยิงเข้าฐานข้อมูลตรงๆ ทันที
+      try {
+        await DB.processStockAudit(payload);
+        return 'ok';
+      } catch (e) {
+        console.error('API Error:', e);
+        hasError = true;
+        errorMessage = e.message;
+        throw e; // ดัน Error ออกไปให้ระบบรู้ว่าล้มเหลว
+      }
+    }));
+    
+    const okCount = results.filter(r => r.status === 'fulfilled' && r.value === 'ok').length;
+    const offlineCount = results.filter(r => r.status === 'fulfilled' && r.value === 'offline').length;
+    const errCount = results.filter(r => r.status === 'rejected').length;
 
-      // ถ้ามีของหาย ให้เด้ง Modal ถามสาเหตุ
-      if (lostItems.length > 0) {
-        const modalWrap = document.createElement('div');
-        modalWrap.className = 'fixed inset-0 z-[60] bg-ink/40 backdrop-blur-sm flex flex-col justify-end p-4 screen';
-        modalWrap.innerHTML = `
+    updateNetBadge();
+    
+    // ถ้าพัง แจ้งเตือน Error ให้ผู้ใช้เห็นชัดๆ (ไม่แอบโยนเข้าคิวแล้ว)
+    if (errCount > 0) {
+      toast(`เกิดข้อผิดพลาด ${errCount} รายการ: ${errorMessage}`, 'error');
+      btn.disabled = false;
+      btn.textContent = 'บันทึกการนับสต็อก';
+      return; 
+    }
+
+    if (offlineCount > 0 && okCount === 0) toast(`บันทึกในเครื่องแล้ว (รอซิงค์)`, 'offline');
+    else if (offlineCount > 0) toast(`บันทึกแล้ว ${okCount} รายการ, รอซิงค์ ${offlineCount}`, 'info');
+    else toast('บันทึกการนับสต็อกสำเร็จ ✓', 'success');
+    
+    go('dashboard');
+  };
+
+  // ถ้ามีของหาย ให้เด้ง Modal ถามสาเหตุ
+  if (lostItems.length > 0) {
+    const modalWrap = document.createElement('div');
+    modalWrap.className = 'fixed inset-0 z-[60] bg-ink/40 backdrop-blur-sm flex flex-col justify-end p-4 screen';
+    modalWrap.innerHTML = `
       <div class="bg-surface rounded-3xl p-5 w-full max-w-md mx-auto shadow-2xl pop-in">
         <h3 class="font-display font-semibold text-lg text-danger mb-1">พบสินค้าขาดหาย ${lostItems.length} รายการ</h3>
         <p class="text-xs text-muted mb-4">โปรดระบุสาเหตุ เพื่อให้ระบบลงบันทึกค่าใช้จ่ายได้ถูกต้อง</p>
@@ -961,22 +992,22 @@
         </div>
       </div>
     `;
-        document.body.appendChild(modalWrap);
+    document.body.appendChild(modalWrap);
 
-        modalWrap.querySelector('#cancel-reason').onclick = () => modalWrap.remove();
-        modalWrap.querySelector('#confirm-reason').onclick = () => {
-          const reasons = {};
-          modalWrap.querySelectorAll('[data-reason-id]').forEach(sel => {
-            reasons[sel.dataset.reasonId] = sel.value;
-          });
-          modalWrap.remove();
-          executeSave(reasons);
-        };
-      } else {
-        // ถ้าของไม่หาย กดเซฟได้เลย
-        executeSave();
-      }
-    }
+    modalWrap.querySelector('#cancel-reason').onclick = () => modalWrap.remove();
+    modalWrap.querySelector('#confirm-reason').onclick = () => {
+      const reasons = {};
+      modalWrap.querySelectorAll('[data-reason-id]').forEach(sel => {
+        reasons[sel.dataset.reasonId] = sel.value;
+      });
+      modalWrap.remove();
+      executeSave(reasons);
+    };
+  } else {
+    // ถ้าของไม่หาย กดเซฟได้เลย
+    executeSave();
+  }
+}
     /* ============================================================
        9) FINANCE (อัปเดตเพิ่มระบบโอนเงิน)
        ============================================================ */
@@ -1551,7 +1582,7 @@
       const tab = state.tab || 'buildings';
       root.innerHTML = `
     <h1 class="font-display text-2xl font-semibold mb-4">จัดการข้อมูล</h1>
-    <div class="flex gap-2 mb-4 overflow-x-auto" id="inv-tabs">
+    <div class="flex gap-2 mb-4 pb-2 overflow-x-auto no-scrollbar" id="inv-tabs">
       ${[['buildings', 'ตึก/ชั้น'], ['products', 'สินค้า'], ['assign', 'นำเข้าชั้น'], ['transfer', 'ย้ายสินค้า']].map(([k, l]) => `
         <button data-tab="${k}" class="press whitespace-nowrap text-sm font-medium px-4 py-2 rounded-full ${tab === k ? 'bg-primary text-white' : 'bg-surface border border-hairline text-muted'}">${l}</button>`).join('')}
       <button data-calc-tab class="press whitespace-nowrap text-sm font-medium px-4 py-2 rounded-full bg-surface border border-dashed border-primary text-primary flex items-center gap-1">
