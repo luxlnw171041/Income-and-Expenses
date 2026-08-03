@@ -1,401 +1,652 @@
 <!DOCTYPE html>
 <html lang="th">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
-<title>คุณเมียที่สวยที่สุดในโลก
-</title>
-<meta name="theme-color" content="#145C52">
-<link rel="manifest" href="manifest.json">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;500;600;700&family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
-<script src="https://cdn.tailwindcss.com"></script>
-<script>
-  tailwind.config = {
-    theme: {
-      extend: {
-        colors: {
-          bg: '#F5F7F1',
-          surface: '#FFFFFF',
-          primary: { DEFAULT: '#145C52', dark: '#0E453D', light: '#E4EFEA' },
-          accent: { DEFAULT: '#F2A33C', dark: '#D98A22', light: '#FCEBD1' },
-          danger: { DEFAULT: '#D9483F', light: '#FBE4E2' },
-          success: { DEFAULT: '#3FA34D', light: '#E4F5E7' },
-          ink: '#1B2420',
-          muted: '#6B7770',
-          hairline: '#E4E7E0',
-        },
-        fontFamily: {
-          display: ['Kanit', 'sans-serif'],
-          body: ['Sarabun', 'sans-serif'],
-        },
-        borderRadius: { '2xl': '1.25rem', '3xl': '1.75rem' },
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+  <title>คุณเมียที่สวยที่สุดในโลก
+  </title>
+  <meta name="theme-color" content="#145C52">
+  <link rel="manifest" href="manifest.json">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;500;600;700&family=Sarabun:wght@400;500;600&display=swap"
+    rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            bg: '#F5F7F1',
+            surface: '#FFFFFF',
+            primary: { DEFAULT: '#145C52', dark: '#0E453D', light: '#E4EFEA' },
+            accent: { DEFAULT: '#F2A33C', dark: '#D98A22', light: '#FCEBD1' },
+            danger: { DEFAULT: '#D9483F', light: '#FBE4E2' },
+            success: { DEFAULT: '#3FA34D', light: '#E4F5E7' },
+            ink: '#1B2420',
+            muted: '#6B7770',
+            hairline: '#E4E7E0',
+          },
+          fontFamily: {
+            display: ['Kanit', 'sans-serif'],
+            body: ['Sarabun', 'sans-serif'],
+          },
+          borderRadius: { '2xl': '1.25rem', '3xl': '1.75rem' },
+        }
       }
     }
-  }
-</script>
-<style>
-  * { -webkit-tap-highlight-color: transparent; }
-  html, body { overscroll-behavior-y: none; }
-  body { font-family: 'Sarabun', sans-serif; background: #F5F7F1; color: #1B2420; }
-  .font-display { font-family: 'Kanit', sans-serif; }
-  .tnum { font-variant-numeric: tabular-nums; }
+  </script>
+  <style>
+    * {
+      -webkit-tap-highlight-color: transparent;
+    }
 
-  /* page transitions */
-  .screen { animation: fadeSlideIn .28s cubic-bezier(.22,.9,.32,1) both; }
-  @keyframes fadeSlideIn { from { opacity:0; transform: translateY(10px);} to { opacity:1; transform:none; } }
+    html,
+    body {
+      overscroll-behavior-y: none;
+    }
 
-  /* press feedback */
-  .press { transition: transform .12s ease, opacity .12s ease; }
-  .press:active { transform: scale(0.94); opacity: .85; }
+    body {
+      font-family: 'Sarabun', sans-serif;
+      background: #F5F7F1;
+      color: #1B2420;
+    }
 
-  /* badge pop */
-  .pop-in { animation: popIn .32s cubic-bezier(.34,1.56,.64,1) both; }
-  @keyframes popIn { 0% { opacity:0; transform: scale(.5) translateY(4px);} 100% { opacity:1; transform: scale(1) translateY(0);} }
+    .font-display {
+      font-family: 'Kanit', sans-serif;
+    }
 
-  /* toast */
-  #toast-wrap { position: fixed; top: max(env(safe-area-inset-top), 12px); left: 0; right: 0; z-index: 60; display:flex; flex-direction:column; align-items:center; gap:8px; pointer-events:none; }
-  .toast { pointer-events:auto; animation: toastIn .35s cubic-bezier(.22,.9,.32,1) both; }
-  @keyframes toastIn { from { opacity:0; transform: translateY(-16px) scale(.96);} to { opacity:1; transform:none; } }
-  .toast.out { animation: toastOut .25s ease forwards; }
-  @keyframes toastOut { to { opacity:0; transform: translateY(-10px) scale(.97); } }
+    .tnum {
+      font-variant-numeric: tabular-nums;
+    }
 
-  /* skeleton shimmer */
-  .shimmer { background: linear-gradient(90deg, #ECEFE8 25%, #F5F7F1 37%, #ECEFE8 63%); background-size: 400% 100%; animation: shimmer 1.4s ease infinite; }
-  @keyframes shimmer { 0% { background-position: 100% 0; } 100% { background-position: 0 0; } }
+    /* page transitions */
+    .screen {
+      animation: fadeSlideIn .28s cubic-bezier(.22, .9, .32, 1) both;
+    }
 
-  /* shelf tag: dashed perforation, signature element */
-  .shelf-tag { position: relative; }
-  .shelf-tag::before {
-    content: ''; position: absolute; left: 14px; right: 14px; top: 0;
-    border-top: 2px dashed #D8DED2;
-  }
-  .shelf-tag .notch { position:absolute; top:-9px; width:18px; height:18px; border-radius:9999px; background:#F5F7F1; border:2px solid #D8DED2; }
+    @keyframes fadeSlideIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
 
-  /* count-up number */
-  .count-num { transition: opacity .2s ease; }
+      to {
+        opacity: 1;
+        transform: none;
+      }
+    }
 
-  /* nav */
-  .navbtn { transition: color .2s ease, transform .15s ease; }
-  .navbtn.active { color: #145C52; }
-  .navbtn .dot { transition: transform .25s cubic-bezier(.34,1.56,.64,1), opacity .2s ease; }
+    /* press feedback */
+    .press {
+      transition: transform .12s ease, opacity .12s ease;
+    }
 
-  /* offline pulse */
-  .pulse-dot { animation: pulseDot 1.6s ease-in-out infinite; }
-  @keyframes pulseDot { 0%,100% { opacity:1; } 50% { opacity:.35; } }
+    .press:active {
+      transform: scale(0.94);
+      opacity: .85;
+    }
 
-  /* switch */
-  .seg-thumb { transition: transform .25s cubic-bezier(.22,.9,.32,1); }
+    /* badge pop */
+    .pop-in {
+      animation: popIn .32s cubic-bezier(.34, 1.56, .64, 1) both;
+    }
 
-  input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance:none; margin:0; }
-  input[type=number] { -moz-appearance: textfield; }
+    @keyframes popIn {
+      0% {
+        opacity: 0;
+        transform: scale(.5) translateY(4px);
+      }
 
-  ::selection { background: #F2A33C; color: #fff; }
-</style>
+      100% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
+    }
+
+    /* toast */
+    #toast-wrap {
+      position: fixed;
+      top: max(env(safe-area-inset-top), 12px);
+      left: 0;
+      right: 0;
+      z-index: 60;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      pointer-events: none;
+    }
+
+    .toast {
+      pointer-events: auto;
+      animation: toastIn .35s cubic-bezier(.22, .9, .32, 1) both;
+    }
+
+    @keyframes toastIn {
+      from {
+        opacity: 0;
+        transform: translateY(-16px) scale(.96);
+      }
+
+      to {
+        opacity: 1;
+        transform: none;
+      }
+    }
+
+    .toast.out {
+      animation: toastOut .25s ease forwards;
+    }
+
+    @keyframes toastOut {
+      to {
+        opacity: 0;
+        transform: translateY(-10px) scale(.97);
+      }
+    }
+
+    /* skeleton shimmer */
+    .shimmer {
+      background: linear-gradient(90deg, #ECEFE8 25%, #F5F7F1 37%, #ECEFE8 63%);
+      background-size: 400% 100%;
+      animation: shimmer 1.4s ease infinite;
+    }
+
+    @keyframes shimmer {
+      0% {
+        background-position: 100% 0;
+      }
+
+      100% {
+        background-position: 0 0;
+      }
+    }
+
+    /* shelf tag: dashed perforation, signature element */
+    .shelf-tag {
+      position: relative;
+    }
+
+    .shelf-tag::before {
+      content: '';
+      position: absolute;
+      left: 14px;
+      right: 14px;
+      top: 0;
+      border-top: 2px dashed #D8DED2;
+    }
+
+    .shelf-tag .notch {
+      position: absolute;
+      top: -9px;
+      width: 18px;
+      height: 18px;
+      border-radius: 9999px;
+      background: #F5F7F1;
+      border: 2px solid #D8DED2;
+    }
+
+    /* count-up number */
+    .count-num {
+      transition: opacity .2s ease;
+    }
+
+    /* nav */
+    .navbtn {
+      transition: color .2s ease, transform .15s ease;
+    }
+
+    .navbtn.active {
+      color: #145C52;
+    }
+
+    .navbtn .dot {
+      transition: transform .25s cubic-bezier(.34, 1.56, .64, 1), opacity .2s ease;
+    }
+
+    /* offline pulse */
+    .pulse-dot {
+      animation: pulseDot 1.6s ease-in-out infinite;
+    }
+
+    @keyframes pulseDot {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: .35;
+      }
+    }
+
+    /* switch */
+    .seg-thumb {
+      transition: transform .25s cubic-bezier(.22, .9, .32, 1);
+    }
+
+    input[type=number]::-webkit-inner-spin-button,
+    input[type=number]::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    input[type=number] {
+      -moz-appearance: textfield;
+    }
+
+    ::selection {
+      background: #F2A33C;
+      color: #fff;
+    }
+  </style>
 </head>
+
 <body class="antialiased">
 
-<div id="toast-wrap"></div>
+  <div id="toast-wrap"></div>
 
-<!-- App shell -->
-<div class="max-w-md mx-auto min-h-screen flex flex-col bg-bg" style="padding-bottom: env(safe-area-inset-bottom);">
+  <!-- App shell -->
+  <div class="max-w-md mx-auto min-h-screen flex flex-col bg-bg" style="padding-bottom: env(safe-area-inset-bottom);">
 
-  <!-- Top bar -->
-  <header class="sticky top-0 z-40 bg-bg/90 backdrop-blur border-b border-hairline" style="padding-top: env(safe-area-inset-top);">
-    <div class="flex items-center justify-between px-4 h-14">
-      <div class="flex items-center gap-2">
-        <div class="w-8 h-8 rounded-xl bg-primary flex items-center justify-center text-white font-display font-semibold text-sm">ต</div>
-        <span class="font-display font-semibold text-[15px] tracking-tight">คุณเมียที่สวยที่สุดในโลก
-</span>
+    <!-- Top bar -->
+    <header class="sticky top-0 z-40 bg-bg/90 backdrop-blur border-b border-hairline"
+      style="padding-top: env(safe-area-inset-top);">
+      <div class="flex items-center justify-between px-4 h-14">
+        <div class="flex items-center gap-2">
+          <div
+            class="w-8 h-8 rounded-xl bg-primary flex items-center justify-center text-white font-display font-semibold text-sm">
+            ต</div>
+          <span class="font-display font-semibold text-[15px] tracking-tight">คุณเมียที่สวยที่สุดในโลก
+          </span>
+        </div>
+        <div id="net-badge" class="flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full border">
+          <span id="net-dot" class="w-2 h-2 rounded-full"></span>
+          <span id="net-label"></span>
+        </div>
       </div>
-      <div id="net-badge" class="flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full border">
-        <span id="net-dot" class="w-2 h-2 rounded-full"></span>
-        <span id="net-label"></span>
+    </header>
+
+    <!-- Route container -->
+    <main id="app" class="flex-1 px-4 pt-4 pb-28"></main>
+
+    <!-- Bottom nav -->
+    <nav class="fixed bottom-0 left-0 right-0 z-40" style="padding-bottom: env(safe-area-inset-bottom);">
+      <div
+        class="max-w-md mx-auto bg-surface border-t border-hairline rounded-t-3xl shadow-[0_-4px_16px_rgba(0,0,0,0.04)] px-3 pt-2 pb-2 grid grid-cols-4 gap-1">
+        <button data-route="dashboard"
+          class="navbtn press flex flex-col items-center gap-1 py-1.5 rounded-2xl text-muted">
+          <svg class="dot" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 9.5 12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1V9.5Z" />
+          </svg>
+          <span class="text-[11px] font-medium">หน้าแรก</span>
+        </button>
+        <button data-route="count" class="navbtn press flex flex-col items-center gap-1 py-1.5 rounded-2xl text-muted">
+          <svg class="dot" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 3h6v3H9z" />
+            <rect x="5" y="6" width="14" height="15" rx="2" />
+            <path d="M9 12h6M9 16h6" />
+          </svg>
+          <span class="text-[11px] font-medium">นับสต็อก</span>
+        </button>
+        <button data-route="finance"
+          class="navbtn press flex flex-col items-center gap-1 py-1.5 rounded-2xl text-muted">
+          <svg class="dot" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="6" width="18" height="13" rx="2" />
+            <path d="M3 10h18" />
+            <circle cx="16.5" cy="14.5" r="1.5" fill="currentColor" stroke="none" />
+          </svg>
+          <span class="text-[11px] font-medium">เงิน</span>
+        </button>
+        <button data-route="inventory"
+          class="navbtn press flex flex-col items-center gap-1 py-1.5 rounded-2xl text-muted">
+          <svg class="dot" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 8 12 3 3 8l9 5 9-5Z" />
+            <path d="M3 8v8l9 5 9-5V8" />
+            <path d="M12 13v8" />
+          </svg>
+          <span class="text-[11px] font-medium">จัดการ</span>
+        </button>
       </div>
-    </div>
-  </header>
+    </nav>
+  </div>
 
-  <!-- Route container -->
-  <main id="app" class="flex-1 px-4 pt-4 pb-28"></main>
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
-  <!-- Bottom nav -->
-  <nav class="fixed bottom-0 left-0 right-0 z-40" style="padding-bottom: env(safe-area-inset-bottom);">
-    <div class="max-w-md mx-auto bg-surface border-t border-hairline rounded-t-3xl shadow-[0_-4px_16px_rgba(0,0,0,0.04)] px-3 pt-2 pb-2 grid grid-cols-4 gap-1">
-      <button data-route="dashboard" class="navbtn press flex flex-col items-center gap-1 py-1.5 rounded-2xl text-muted">
-        <svg class="dot" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5 12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1V9.5Z"/></svg>
-        <span class="text-[11px] font-medium">หน้าแรก</span>
-      </button>
-      <button data-route="count" class="navbtn press flex flex-col items-center gap-1 py-1.5 rounded-2xl text-muted">
-        <svg class="dot" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6v3H9z"/><rect x="5" y="6" width="14" height="15" rx="2"/><path d="M9 12h6M9 16h6"/></svg>
-        <span class="text-[11px] font-medium">นับสต็อก</span>
-      </button>
-      <button data-route="finance" class="navbtn press flex flex-col items-center gap-1 py-1.5 rounded-2xl text-muted">
-        <svg class="dot" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/><circle cx="16.5" cy="14.5" r="1.5" fill="currentColor" stroke="none"/></svg>
-        <span class="text-[11px] font-medium">เงิน</span>
-      </button>
-      <button data-route="inventory" class="navbtn press flex flex-col items-center gap-1 py-1.5 rounded-2xl text-muted">
-        <svg class="dot" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8 12 3 3 8l9 5 9-5Z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg>
-        <span class="text-[11px] font-medium">จัดการ</span>
-      </button>
-    </div>
-  </nav>
-</div>
+    /* ============================================================
+       1) CONFIG — ใส่ค่า Supabase ของคุณตรงนี้ (ระบบใช้ Supabase จริงเท่านั้น
+       ไม่มี Mock Mode แล้ว ต้องตั้งค่าให้ครบก่อนใช้งาน)
+       ============================================================ */
+    const SUPABASE_URL = 'https://dfemavcrzpmmgqqjrxvz.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRmZW1hdmNyenBtbWdxcWpyeHZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU2ODY4NTEsImV4cCI6MjEwMTI2Mjg1MX0.JYsRkjRwbAqKxqB9MT5iMDOeh5zh087sWmKo_Jx1cbc';
 
-<script type="module">
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+    const CONFIGURED = !SUPABASE_URL.includes('SUPABASE_URL') && !!SUPABASE_ANON_KEY && !SUPABASE_ANON_KEY.includes('YOUR_SUPABASE');
+    const supabase = CONFIGURED ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
-/* ============================================================
-   1) CONFIG — ใส่ค่า Supabase ของคุณตรงนี้ (ระบบใช้ Supabase จริงเท่านั้น
-   ไม่มี Mock Mode แล้ว ต้องตั้งค่าให้ครบก่อนใช้งาน)
-   ============================================================ */
-const SUPABASE_URL = 'https://dfemavcrzpmmgqqjrxvz.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRmZW1hdmNyenBtbWdxcWpyeHZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU2ODY4NTEsImV4cCI6MjEwMTI2Mjg1MX0.JYsRkjRwbAqKxqB9MT5iMDOeh5zh087sWmKo_Jx1cbc';
-
-const CONFIGURED = !SUPABASE_URL.includes('SUPABASE_URL') && !!SUPABASE_ANON_KEY && !SUPABASE_ANON_KEY.includes('YOUR_SUPABASE');
-const supabase = CONFIGURED ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
-
-/* ============================================================
-   2) TOAST
-   ============================================================ */
-function toast(msg, kind = 'info') {
-  const wrap = document.getElementById('toast-wrap');
-  const el = document.createElement('div');
-  const styles = {
-    info: 'bg-ink text-white',
-    success: 'bg-success text-white',
-    error: 'bg-danger text-white',
-    offline: 'bg-accent text-white',
-  };
-  el.className = `toast ${styles[kind] || styles.info} text-sm font-medium px-4 py-2.5 rounded-full shadow-lg max-w-[90%] text-center`;
-  el.textContent = msg;
-  wrap.appendChild(el);
-  setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 250); }, 2600);
-}
-
-/* ============================================================
-   3) OFFLINE QUEUE (localStorage) + AUTO SYNC
-   ============================================================ */
-const QUEUE_KEY = 'pending_stock_sync';
-
-function getQueue() { try { return JSON.parse(localStorage.getItem(QUEUE_KEY)) || []; } catch { return []; } }
-function setQueue(q) { localStorage.setItem(QUEUE_KEY, JSON.stringify(q)); updateNetBadge(); }
-function pushToQueue(item) { const q = getQueue(); q.push({ ...item, queued_at: Date.now() }); setQueue(q); }
-
-async function syncQueue() {
-  if (!navigator.onLine) return;
-  let q = getQueue();
-  if (q.length === 0) return;
-  toast(`กำลังซิงค์ข้อมูล ${q.length} รายการ...`, 'info');
-  while (q.length > 0) {
-    const item = q[0];
-    try {
-      await DB.processStockAudit(item.payload, true);
-      q.shift();
-      setQueue(q);
-    } catch (e) {
-      console.error('sync failed', e);
-      break; // stop FIFO on first failure, retry later
+    /* ============================================================
+       2) TOAST
+       ============================================================ */
+    function toast(msg, kind = 'info') {
+      const wrap = document.getElementById('toast-wrap');
+      const el = document.createElement('div');
+      const styles = {
+        info: 'bg-ink text-white',
+        success: 'bg-success text-white',
+        error: 'bg-danger text-white',
+        offline: 'bg-accent text-white',
+      };
+      el.className = `toast ${styles[kind] || styles.info} text-sm font-medium px-4 py-2.5 rounded-full shadow-lg max-w-[90%] text-center`;
+      el.textContent = msg;
+      wrap.appendChild(el);
+      setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 250); }, 2600);
     }
-  }
-  if (getQueue().length === 0) toast('ซิงค์ข้อมูลสำเร็จทั้งหมด ✓', 'success');
-  refreshCurrentRoute();
-}
 
-window.addEventListener('online', () => { updateNetBadge(); syncQueue(); });
-window.addEventListener('offline', updateNetBadge);
+    /* ============================================================
+       3) OFFLINE QUEUE (localStorage) + AUTO SYNC
+       ============================================================ */
+    const QUEUE_KEY = 'pending_stock_sync';
 
-function updateNetBadge() {
-  const dot = document.getElementById('net-dot');
-  const label = document.getElementById('net-label');
-  const badge = document.getElementById('net-badge');
-  const pending = getQueue().length;
-  if (navigator.onLine) {
-    badge.className = 'flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full border border-success/30 bg-success-light text-success';
-    dot.className = 'w-2 h-2 rounded-full bg-success';
-    label.textContent = pending > 0 ? `ออนไลน์ · ซิงค์ ${pending}` : 'ออนไลน์';
-  } else {
-    badge.className = 'flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full border border-danger/30 bg-danger-light text-danger';
-    dot.className = 'w-2 h-2 rounded-full bg-danger pulse-dot';
-    label.textContent = pending > 0 ? `ออฟไลน์ · รอ ${pending}` : 'ออฟไลน์';
-  }
-}
+    function getQueue() { try { return JSON.parse(localStorage.getItem(QUEUE_KEY)) || []; } catch { return []; } }
+    function setQueue(q) { localStorage.setItem(QUEUE_KEY, JSON.stringify(q)); updateNetBadge(); }
+    function pushToQueue(item) { const q = getQueue(); q.push({ ...item, queued_at: Date.now() }); setQueue(q); }
 
-/* ============================================================
-   4) uid() — small local id generator, still used by the standalone
-   cost/profit calculator's scratch list (section 11), which is
-   intentionally local-only and never touches Supabase.
-   ============================================================ */
-function uid(p) { return p + '_' + Math.random().toString(36).slice(2, 9); }
-
-/* ============================================================
-   5) DATA ACCESS LAYER — Supabase only
-   ============================================================ */
-const DB = {
-  async getBuildings() {
-    const { data, error } = await supabase.from('buildings').select('*').order('name');
-    if (error) throw error; return data;
-  },
-  async getShelves(buildingId) {
-    const { data, error } = await supabase.from('shelves').select('*').eq('building_id', buildingId).order('floor');
-    if (error) throw error; return data;
-  },
-  async getShelfItems(shelfId) {
-    // NOTE: previously this used a single query with an invalid double-nested
-    // embed (`stock_batches:products(stock_batches(...))`), which does not
-    // describe a real foreign-key path and returned undefined/empty data —
-    // so cost_price (and therefore the loss value shown while counting stock)
-    // silently resolved to 0 for every item. Fixed by fetching the shelf
-    // items and the latest cost per product in two simple, correct queries.
-    const { data: rows, error } = await supabase
-      .from('product_shelves')
-      .select('id, quantity, product:products(id,name,selling_price,image_url,min_stock_alert)')
-      .eq('shelf_id', shelfId);
-    if (error) throw error;
-    if (rows.length === 0) return [];
-
-    const productIds = rows.map(r => r.product.id);
-    const { data: batches, error: bErr } = await supabase
-      .from('stock_batches')
-      .select('product_id, cost_price, created_at')
-      .in('product_id', productIds)
-      .order('created_at', { ascending: false });
-    if (bErr) throw bErr;
-
-    const latestCostByProduct = {};
-    for (const b of batches) {
-      if (!(b.product_id in latestCostByProduct)) latestCostByProduct[b.product_id] = b.cost_price;
+   async function syncQueue() {
+      if (!navigator.onLine) return;
+      let q = getQueue();
+      if (q.length === 0) return;
+      
+      toast(`กำลังซิงค์ข้อมูล ${q.length} รายการ...`, 'info');
+      let successCount = 0;
+      
+      while (q.length > 0) {
+        const item = q[0];
+        try {
+          await DB.processStockAudit(item.payload, true);
+          q.shift(); // ทำสำเร็จ ลบออกจากคิว
+          successCount++;
+          setQueue(q);
+        } catch (e) {
+          console.error('sync failed', e);
+          // หากเป็น Error ที่เกิดจาก Network (เน็ตหลุดกลางคัน) ให้หยุดรอรอบหน้า
+          if (e.message.toLowerCase().includes('fetch') || e.message.toLowerCase().includes('network')) {
+            break; 
+          } else {
+            // หากเป็น Error จากข้อมูลพัง (เซิร์ฟเวอร์ปฏิเสธ) ให้ทิ้งรายการนี้ไปเลย คิวจะได้ไม่ตัน
+            q.shift(); 
+            setQueue(q);
+            toast(`ข้ามรายการที่มีปัญหา: ${item.payload.product_name}`, 'error');
+          }
+        }
+      }
+      
+      if (getQueue().length === 0) {
+        toast('ซิงค์ข้อมูลสำเร็จทั้งหมด ✓', 'success');
+      } else if (successCount > 0) {
+        toast(`ซิงค์สำเร็จ ${successCount} รายการ (เหลือรอซิงค์ ${getQueue().length})`, 'info');
+      }
+      refreshCurrentRoute();
     }
-    return rows.map(row => ({
-      id: row.id, quantity: row.quantity, product: row.product,
-      cost_price: latestCostByProduct[row.product.id] ?? 0,
-    }));
-  },
-  async processStockAudit(payload, fromQueue = false) {
-    // payload: { product_shelf_id, expected_qty, actual_qty, cost_price, product_name, account_id }
-    const { data, error } = await supabase.rpc('process_stock_audit', {
-      p_product_shelf_id: payload.product_shelf_id,
-      p_actual_qty: payload.actual_qty,
+
+    window.addEventListener('online', () => { updateNetBadge(); syncQueue(); });
+    window.addEventListener('offline', updateNetBadge);
+
+    function updateNetBadge() {
+      const dot = document.getElementById('net-dot');
+      const label = document.getElementById('net-label');
+      const badge = document.getElementById('net-badge');
+      const pending = getQueue().length;
+      if (navigator.onLine) {
+        badge.className = 'flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full border border-success/30 bg-success-light text-success';
+        dot.className = 'w-2 h-2 rounded-full bg-success';
+        label.textContent = pending > 0 ? `ออนไลน์ · ซิงค์ ${pending}` : 'ออนไลน์';
+      } else {
+        badge.className = 'flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full border border-danger/30 bg-danger-light text-danger';
+        dot.className = 'w-2 h-2 rounded-full bg-danger pulse-dot';
+        label.textContent = pending > 0 ? `ออฟไลน์ · รอ ${pending}` : 'ออฟไลน์';
+      }
+    }
+
+    /* ============================================================
+       4) uid() — small local id generator, still used by the standalone
+       cost/profit calculator's scratch list (section 11), which is
+       intentionally local-only and never touches Supabase.
+       ============================================================ */
+    function uid(p) { return p + '_' + Math.random().toString(36).slice(2, 9); }
+
+    /* ============================================================
+       ฟังก์ชันป้องกัน UI พังจากการพิมพ์อักขระพิเศษ
+       ============================================================ */
+    function escapeHTML(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+    /* ============================================================
+       5) DATA ACCESS LAYER — Supabase only
+       ============================================================ */
+    const DB = {
+      async getBuildings() {
+        const { data, error } = await supabase.from('buildings').select('*').order('name');
+        if (error) throw error; return data;
+      },
+      async getShelves(buildingId) {
+        const { data, error } = await supabase.from('shelves').select('*').eq('building_id', buildingId).order('floor');
+        if (error) throw error; return data;
+      },
+      async getShelfItems(shelfId) {
+        // NOTE: previously this used a single query with an invalid double-nested
+        // embed (`stock_batches:products(stock_batches(...))`), which does not
+        // describe a real foreign-key path and returned undefined/empty data —
+        // so cost_price (and therefore the loss value shown while counting stock)
+        // silently resolved to 0 for every item. Fixed by fetching the shelf
+        // items and the latest cost per product in two simple, correct queries.
+        const { data: rows, error } = await supabase
+          .from('product_shelves')
+          .select('id, quantity, product:products(id,name,selling_price,image_url,min_stock_alert)')
+          .eq('shelf_id', shelfId);
+        if (error) throw error;
+        if (rows.length === 0) return [];
+
+        const productIds = rows.map(r => r.product.id);
+        const { data: batches, error: bErr } = await supabase
+          .from('stock_batches')
+          .select('product_id, cost_price, created_at')
+          .in('product_id', productIds)
+          .order('created_at', { ascending: false });
+        if (bErr) throw bErr;
+
+        const latestCostByProduct = {};
+        for (const b of batches) {
+          if (!(b.product_id in latestCostByProduct)) latestCostByProduct[b.product_id] = b.cost_price;
+        }
+        return rows.map(row => ({
+          id: row.id, quantity: row.quantity, product: row.product,
+          cost_price: latestCostByProduct[row.product.id] ?? 0,
+        }));
+      },
+      async processStockAudit(payload, fromQueue = false) {
+        // payload: { product_shelf_id, expected_qty, actual_qty, cost_price, product_name, account_id, reason }
+        const { data, error } = await supabase.rpc('process_stock_audit', {
+          p_product_shelf_id: payload.product_shelf_id,
+          p_actual_qty: payload.actual_qty,
+          p_reason: payload.reason || null,             // ส่งค่าเหตุผล
+          p_account_id: payload.account_id || null      // ส่ง ID กระเป๋าเพื่อหักเงิน Loss
+        });
+        if (error) throw error;
+        return data;
+      },
+      async getDashboardOverview() {
+        const { data, error } = await supabase.from('view_dashboard_overview').select('*').single();
+        if (error) throw error; return data;
+      },
+      async getLowStockAlerts() {
+        const { data, error } = await supabase.from('view_low_stock_alerts').select('*');
+        if (error) throw error; return data;
+      },
+      async getAccounts() {
+        const { data, error } = await supabase.from('accounts').select('*').order('type');
+        if (error) throw error; return data;
+      },
+      async addTransaction({ account_id, type, category, amount, note }) {
+        const { data, error } = await supabase.rpc('add_transaction', { p_account_id: account_id, p_type: type, p_category: category, p_amount: amount, p_note: note || null });
+        if (error) throw error; return data;
+      },
+      async getRecentTransactions(limit = 8) {
+        const { data, error } = await supabase.from('transactions').select('*').order('created_at', { ascending: false }).limit(limit);
+        if (error) throw error; return data;
+      },
+      async addBuilding(name) {
+        const { data, error } = await supabase.from('buildings').insert({ name }).select().single();
+        if (error) throw error; return data;
+      },
+      async addShelf(building_id, floor) {
+        const { data, error } = await supabase.from('shelves').insert({ building_id, floor }).select().single();
+        if (error) throw error; return data;
+      },
+      async addProduct(p) {
+        const { data, error } = await supabase.from('products').insert(p).select().single();
+        if (error) throw error; return data;
+      },
+      async getProducts() {
+        const { data, error } = await supabase.from('products').select('*').order('name');
+        if (error) throw error; return data;
+      },
+      async addStockBatch(product_id, cost_price, qty) {
+        const { data, error } = await supabase.from('stock_batches').insert({ product_id, cost_price, initial_qty: qty, remaining_qty: qty }).select().single();
+        if (error) throw error; return data;
+      },
+      async getProductsWithCost() {
+        // returns each product with its most recent cost_price + total remaining units across batches
+        const { data: products, error } = await supabase.from('products').select('*').order('name');
+        if (error) throw error;
+        const { data: batches, error: bErr } = await supabase.from('stock_batches').select('*').order('created_at', { ascending: true });
+        if (bErr) throw bErr;
+        // Group batches by product_id in a single pass (was: `batches.filter(...)` re-scanning
+        // the entire batches table once per product — O(products × batches), which gets slow
+        // fast as stock history grows).
+        const batchesByProduct = {};
+        for (const b of batches) (batchesByProduct[b.product_id] ??= []).push(b);
+        return products.map(p => {
+          const pBatches = batchesByProduct[p.id] || [];
+          const latest = pBatches[pBatches.length - 1];
+          const remaining_units = pBatches.reduce((s, b) => s + b.remaining_qty, 0);
+          return { ...p, cost_price: latest ? latest.cost_price : null, remaining_units };
+        });
+      },
+      async assignProductToShelf(shelf_id, product_id, quantity) {
+        const { data, error } = await supabase.from('product_shelves').upsert({ shelf_id, product_id, quantity }, { onConflict: 'shelf_id,product_id' }).select().single();
+        if (error) throw error; return data;
+      },
+      async updateProduct(id, patch) {
+        const { data, error } = await supabase.from('products').update(patch).eq('id', id).select().single();
+        if (error) throw error; return data;
+      },
+      async deleteProduct(id) {
+        const { error } = await supabase.from('products').delete().eq('id', id);
+        if (error) throw error;
+      },// เพิ่มต่อท้ายในออบเจ็กต์ DB 
+      async getAllTransactions(timeRange = 'month') {
+        let query = supabase.from('transactions').select('*').order('created_at', { ascending: false });
+        if (timeRange !== 'all') {
+          const now = new Date();
+          let past = new Date();
+          if (timeRange === 'day') {
+            past.setHours(0, 0, 0, 0);
+          } else if (timeRange === 'week') {
+            past.setDate(now.getDate() - 7);
+          } else if (timeRange === 'month') {
+            past.setMonth(now.getMonth() - 1); // ย้อนหลัง 1 เดือน
+          }
+          query = query.gte('created_at', past.toISOString());
+        }
+        const { data, error } = await query;
+        if (error) throw error;
+        return data;
+      },
+      // เพิ่มต่อท้ายใน DB object
+      async deleteTransaction(txId) {
+        const { data, error } = await supabase.rpc('delete_transaction', { p_tx_id: txId });
+        if (error) throw error;
+        return data;
+      },
+      async updateTransaction({ id, account_id, type, category, amount, note }) {
+        const { data, error } = await supabase.rpc('update_transaction', {
+          p_tx_id: id,
+          p_new_account_id: account_id,
+          p_new_type: type,
+          p_new_category: category,
+          p_new_amount: amount,
+          p_new_note: note || null
+        });
+        if (error) throw error;
+        return data;
+      },// 1. ฟังก์ชันย้ายสต็อก
+      async transferStock({ source_shelf_id, dest_shelf_id, product_id, qty }) {
+        const { data, error } = await supabase.rpc('transfer_stock', {
+          p_source_shelf_id: source_shelf_id,
+          p_dest_shelf_id: dest_shelf_id,
+          p_product_id: product_id,
+          p_qty: qty
+        });
+        if (error) throw error; return data;
+      },
+      // 2. ดึงข้อมูล Analytics ขั้นสูง
+      async getAnalyticsData() {
+        // ดึง Transaction ย้อนหลัง 7 วันเพื่อวาดกราฟ
+        const txs = await this.getAllTransactions('week');
+        return txs;
+      }
+    };
+
+    /* ============================================================
+       6) ROUTER
+       ============================================================ */
+    const app = document.getElementById('app');
+    let currentRoute = 'dashboard';
+    let routeState = {};
+
+    const routes = { dashboard: renderDashboard, count: renderCount, finance: renderFinance, inventory: renderInventory, calculator: renderCalculator, accounts: renderAccounts, analytics: renderAnalytics };
+
+    function go(route, state = {}) {
+      currentRoute = route; routeState = state;
+      document.querySelectorAll('.navbtn').forEach(b => b.classList.toggle('active', b.dataset.route === route));
+      app.innerHTML = '';
+      const wrap = document.createElement('div');
+      wrap.className = 'screen';
+      app.appendChild(wrap);
+      routes[route](wrap, state);
+      window.scrollTo({ top: 0 });
+    }
+    function refreshCurrentRoute() { go(currentRoute, routeState); }
+
+    document.querySelectorAll('.navbtn[data-route]').forEach(btn => {
+      btn.addEventListener('click', () => go(btn.dataset.route));
     });
-    if (error) throw error;
-    return data;
-  },
-  async getDashboardOverview() {
-    const { data, error } = await supabase.from('view_dashboard_overview').select('*').single();
-    if (error) throw error; return data;
-  },
-  async getLowStockAlerts() {
-    const { data, error } = await supabase.from('view_low_stock_alerts').select('*');
-    if (error) throw error; return data;
-  },
-  async getAccounts() {
-    const { data, error } = await supabase.from('accounts').select('*').order('type');
-    if (error) throw error; return data;
-  },
-  async addTransaction({ account_id, type, category, amount, note }) {
-    const { data, error } = await supabase.rpc('add_transaction', { p_account_id: account_id, p_type: type, p_category: category, p_amount: amount, p_note: note || null });
-    if (error) throw error; return data;
-  },
-  async getRecentTransactions(limit = 8) {
-    const { data, error } = await supabase.from('transactions').select('*').order('created_at', { ascending: false }).limit(limit);
-    if (error) throw error; return data;
-  },
-  async addBuilding(name) {
-    const { data, error } = await supabase.from('buildings').insert({ name }).select().single();
-    if (error) throw error; return data;
-  },
-  async addShelf(building_id, floor) {
-    const { data, error } = await supabase.from('shelves').insert({ building_id, floor }).select().single();
-    if (error) throw error; return data;
-  },
-  async addProduct(p) {
-    const { data, error } = await supabase.from('products').insert(p).select().single();
-    if (error) throw error; return data;
-  },
-  async getProducts() {
-    const { data, error } = await supabase.from('products').select('*').order('name');
-    if (error) throw error; return data;
-  },
-  async addStockBatch(product_id, cost_price, qty) {
-    const { data, error } = await supabase.from('stock_batches').insert({ product_id, cost_price, initial_qty: qty, remaining_qty: qty }).select().single();
-    if (error) throw error; return data;
-  },
-  async getProductsWithCost() {
-    // returns each product with its most recent cost_price + total remaining units across batches
-    const { data: products, error } = await supabase.from('products').select('*').order('name');
-    if (error) throw error;
-    const { data: batches, error: bErr } = await supabase.from('stock_batches').select('*').order('created_at', { ascending: true });
-    if (bErr) throw bErr;
-    // Group batches by product_id in a single pass (was: `batches.filter(...)` re-scanning
-    // the entire batches table once per product — O(products × batches), which gets slow
-    // fast as stock history grows).
-    const batchesByProduct = {};
-    for (const b of batches) (batchesByProduct[b.product_id] ??= []).push(b);
-    return products.map(p => {
-      const pBatches = batchesByProduct[p.id] || [];
-      const latest = pBatches[pBatches.length - 1];
-      const remaining_units = pBatches.reduce((s, b) => s + b.remaining_qty, 0);
-      return { ...p, cost_price: latest ? latest.cost_price : null, remaining_units };
-    });
-  },
-  async assignProductToShelf(shelf_id, product_id, quantity) {
-    const { data, error } = await supabase.from('product_shelves').upsert({ shelf_id, product_id, quantity }, { onConflict: 'shelf_id,product_id' }).select().single();
-    if (error) throw error; return data;
-  },// เพิ่มต่อท้ายใน DB object
-async deleteTransaction(txId) {
-  const { data, error } = await supabase.rpc('delete_transaction', { p_tx_id: txId });
-  if (error) throw error;
-  return data;
-},
-async updateTransaction({ id, account_id, type, category, amount, note }) {
-  const { data, error } = await supabase.rpc('update_transaction', {
-    p_tx_id: id,
-    p_new_account_id: account_id,
-    p_new_type: type,
-    p_new_category: category,
-    p_new_amount: amount,
-    p_new_note: note || null
-  });
-  if (error) throw error;
-  return data;
-}
-};
 
-/* ============================================================
-   6) ROUTER
-   ============================================================ */
-const app = document.getElementById('app');
-let currentRoute = 'dashboard';
-let routeState = {};
+    function fmtMoney(n) { return Number(n || 0).toLocaleString('th-TH', { minimumFractionDigits: 0, maximumFractionDigits: 2 }); }
 
-const routes = { dashboard: renderDashboard, count: renderCount, finance: renderFinance, inventory: renderInventory, calculator: renderCalculator };
+    function skeleton(h = 'h-24') {
+      return `<div class="shimmer rounded-2xl ${h} w-full"></div>`;
+    }
 
-function go(route, state = {}) {
-  currentRoute = route; routeState = state;
-  document.querySelectorAll('.navbtn').forEach(b => b.classList.toggle('active', b.dataset.route === route));
-  app.innerHTML = '';
-  const wrap = document.createElement('div');
-  wrap.className = 'screen';
-  app.appendChild(wrap);
-  routes[route](wrap, state);
-  window.scrollTo({ top: 0 });
-}
-function refreshCurrentRoute() { go(currentRoute, routeState); }
-
-document.querySelectorAll('.navbtn[data-route]').forEach(btn => {
-  btn.addEventListener('click', () => go(btn.dataset.route));
-});
-
-function fmtMoney(n) { return Number(n || 0).toLocaleString('th-TH', { minimumFractionDigits: 0, maximumFractionDigits: 2 }); }
-
-function skeleton(h = 'h-24') {
-  return `<div class="shimmer rounded-2xl ${h} w-full"></div>`;
-}
-
-/* ============================================================
-   7) DASHBOARD
-   ============================================================ */
-async function renderDashboard(root) {
-  root.innerHTML = `
+    /* ============================================================
+       7) DASHBOARD (อัปเดตปุ่มทางลัดครบทั้งหมด)
+       ============================================================ */
+    async function renderDashboard(root) {
+      root.innerHTML = `
     <div class="mb-5">
       <p class="text-muted text-sm">สวัสดี 👋</p>
       <h1 class="font-display text-2xl font-semibold">ภาพรวมวันนี้</h1>
@@ -413,7 +664,16 @@ async function renderDashboard(root) {
         </button>
         <button id="qa-finance" class="press bg-accent text-white rounded-2xl p-4 text-left shadow-sm">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mb-2"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/></svg>
-          <div class="font-display font-medium text-sm">บันทึกรายรับ-จ่าย</div>
+          <div class="font-display font-medium text-sm">บันทึกรับ-จ่าย</div>
+        </button>
+        <button id="qa-accounts" class="press col-span-2 bg-primary-light border border-primary/20 rounded-2xl p-4 flex items-center gap-3 shadow-sm">
+          <div class="w-9 h-9 rounded-xl bg-primary flex items-center justify-center text-white shrink-0">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/><circle cx="16.5" cy="14.5" r="1.5" fill="currentColor" stroke="none"/></svg>
+          </div>
+          <div class="text-left">
+            <div class="font-display font-medium text-sm">ดูรายการแยกบัญชี</div>
+            <div class="text-xs text-muted">เข้า-ออก ยอดคงเหลือ กรองวัน/สัปดาห์/เดือน</div>
+          </div>
         </button>
         <button id="qa-calc" class="press col-span-2 bg-surface border border-hairline rounded-2xl p-4 flex items-center gap-3 shadow-sm">
           <div class="w-9 h-9 rounded-xl bg-primary-light flex items-center justify-center text-primary shrink-0">
@@ -424,34 +684,50 @@ async function renderDashboard(root) {
             <div class="text-xs text-muted">คำนวณเฉยๆ ตอนซื้อของ ไม่บันทึกเข้าระบบ</div>
           </div>
         </button>
+        
+        <!-- ปุ่ม Analytics ที่เพิ่มใหม่ -->
+        <button id="qa-analytics" class="press col-span-2 bg-ink text-white rounded-2xl p-4 flex items-center gap-3 shadow-sm">
+          <div class="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+          </div>
+          <div class="text-left">
+            <div class="font-display font-medium text-sm">ดูสถิติเชิงลึก (Analytics)</div>
+            <div class="text-xs text-white/70">กราฟยอดขาย, รายจ่าย และความเสียหาย</div>
+          </div>
+        </button>
+
       </div>
     </div>
   `;
-  root.querySelector('#qa-count').onclick = () => go('count');
-  root.querySelector('#qa-finance').onclick = () => go('finance');
-  root.querySelector('#qa-calc').onclick = () => go('calculator', { from: 'dashboard' });
 
-  try {
-    const [overview, alerts] = await Promise.all([DB.getDashboardOverview(), DB.getLowStockAlerts()]);
-    const cards = [
-      { label: 'ยอดขายรวม', value: overview.total_sales, color: 'text-primary', icon: 'sale' },
-      { label: 'กำไรสุทธิ', value: overview.net_profit ?? (overview.total_sales - overview.total_expenses), color: overview.net_profit >= 0 ? 'text-success' : 'text-danger', icon: 'profit' },
-      { label: 'รายจ่ายรวม', value: overview.total_expenses, color: 'text-ink', icon: 'expense' },
-      { label: 'มูลค่าสูญหาย', value: overview.total_loss_value, color: 'text-danger', icon: 'loss' },
-    ];
-    root.querySelector('#dash-cards').innerHTML = cards.map((c, i) => `
+      // ผูก Event ให้ครบทุกปุ่ม (ถ้าหา HTML ไม่เจอ บรรทัดพวกนี้จะพ่น Error Null ทันที)
+      root.querySelector('#qa-count').onclick = () => go('count');
+      root.querySelector('#qa-finance').onclick = () => go('finance');
+      root.querySelector('#qa-accounts').onclick = () => go('accounts');
+      root.querySelector('#qa-calc').onclick = () => go('calculator', { from: 'dashboard' });
+      root.querySelector('#qa-analytics').onclick = () => go('analytics');
+
+      try {
+        const [overview, alerts] = await Promise.all([DB.getDashboardOverview(), DB.getLowStockAlerts()]);
+        const cards = [
+          { label: 'ยอดขายรวม', value: overview.total_sales, color: 'text-primary', icon: 'sale' },
+          { label: 'กำไรสุทธิ', value: overview.net_profit ?? (overview.total_sales - overview.total_expenses), color: overview.net_profit >= 0 ? 'text-success' : 'text-danger', icon: 'profit' },
+          { label: 'รายจ่ายรวม', value: overview.total_expenses, color: 'text-ink', icon: 'expense' },
+          { label: 'มูลค่าสูญหาย', value: overview.total_loss_value, color: 'text-danger', icon: 'loss' },
+        ];
+        root.querySelector('#dash-cards').innerHTML = cards.map((c, i) => `
       <div class="bg-surface rounded-2xl p-4 border border-hairline pop-in" style="animation-delay:${i * 60}ms">
         <p class="text-xs text-muted mb-1">${c.label}</p>
         <p class="font-display font-semibold text-xl tnum ${c.color}">฿${fmtMoney(c.value)}</p>
       </div>
     `).join('');
 
-    const alertsHtml = alerts.length === 0
-      ? `<div class="bg-primary-light rounded-2xl p-4 text-sm text-primary flex items-center gap-2">
+        const alertsHtml = alerts.length === 0
+          ? `<div class="bg-primary-light rounded-2xl p-4 text-sm text-primary flex items-center gap-2">
            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
            สต็อกทุกจุดยังปกติดี
          </div>`
-      : `<div class="bg-surface rounded-2xl border border-hairline overflow-hidden">
+          : `<div class="bg-surface rounded-2xl border border-hairline overflow-hidden">
           <div class="px-4 pt-3 pb-2 flex items-center justify-between">
             <h3 class="font-display font-semibold text-sm">⚠️ สินค้าใกล้หมด (${alerts.length})</h3>
           </div>
@@ -467,26 +743,25 @@ async function renderDashboard(root) {
             `).join('')}
           </div>
         </div>`;
-    root.querySelector('#dash-alerts').innerHTML = alertsHtml;
-  } catch (e) {
-    console.error(e);
-    toast('โหลดข้อมูลไม่สำเร็จ: ' + e.message, 'error');
-  }
-}
+        root.querySelector('#dash-alerts').innerHTML = alertsHtml;
+      } catch (e) {
+        console.error(e);
+        toast('โหลดข้อมูลไม่สำเร็จ: ' + e.message, 'error');
+      }
+    }
+    /* ============================================================
+       8) STOCK COUNTING (signature screen)
+       ============================================================ */
+    let countCart = {}; // product_shelf_id -> { actual, expected, cost_price, product }
 
-/* ============================================================
-   8) STOCK COUNTING (signature screen)
-   ============================================================ */
-let countCart = {}; // product_shelf_id -> { actual, expected, cost_price, product }
+    async function renderCount(root, state) {
+      const step = state.step || 'building';
 
-async function renderCount(root, state) {
-  const step = state.step || 'building';
-
-  if (step === 'building') {
-    root.innerHTML = `<div class="mb-4"><h1 class="font-display text-2xl font-semibold">เลือกตึก</h1><p class="text-muted text-sm">เริ่มนับสต็อกจากตึกที่ต้องการ</p></div>
+      if (step === 'building') {
+        root.innerHTML = `<div class="mb-4"><h1 class="font-display text-2xl font-semibold">เลือกตึก</h1><p class="text-muted text-sm">เริ่มนับสต็อกจากตึกที่ต้องการ</p></div>
       <div id="b-list" class="space-y-3">${skeleton('h-16')}${skeleton('h-16')}</div>`;
-    const buildings = await DB.getBuildings();
-    root.querySelector('#b-list').innerHTML = buildings.map(b => `
+        const buildings = await DB.getBuildings();
+        root.querySelector('#b-list').innerHTML = buildings.map(b => `
       <button data-id="${b.id}" class="press w-full bg-surface border border-hairline rounded-2xl p-4 flex items-center justify-between shadow-sm">
         <div class="flex items-center gap-3">
           <div class="w-10 h-10 rounded-xl bg-primary-light flex items-center justify-center text-primary font-display font-semibold">${b.name.slice(-1)}</div>
@@ -494,90 +769,77 @@ async function renderCount(root, state) {
         </div>
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-muted"><path d="m9 18 6-6-6-6"/></svg>
       </button>`).join('');
-    root.querySelectorAll('#b-list button').forEach(b => b.onclick = () => go('count', { step: 'shelf', buildingId: b.dataset.id, buildingName: buildings.find(x=>x.id===b.dataset.id).name }));
-    return;
-  }
+        root.querySelectorAll('#b-list button').forEach(b => b.onclick = () => go('count', { step: 'shelf', buildingId: b.dataset.id, buildingName: buildings.find(x => x.id === b.dataset.id).name }));
+        return;
+      }
 
-  if (step === 'shelf') {
-    root.innerHTML = `
+      if (step === 'shelf') {
+        root.innerHTML = `
       <button id="back" class="press text-sm text-muted flex items-center gap-1 mb-3">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg> กลับ
       </button>
       <h1 class="font-display text-2xl font-semibold mb-1">${state.buildingName}</h1>
       <p class="text-muted text-sm mb-4">เลือกชั้นที่ต้องการนับ</p>
       <div id="s-list" class="grid grid-cols-2 gap-3">${skeleton('h-20')}${skeleton('h-20')}</div>`;
-    root.querySelector('#back').onclick = () => go('count', { step: 'building' });
-    const shelves = await DB.getShelves(state.buildingId);
-    root.querySelector('#s-list').innerHTML = shelves.map(s => `
+        root.querySelector('#back').onclick = () => go('count', { step: 'building' });
+        const shelves = await DB.getShelves(state.buildingId);
+        root.querySelector('#s-list').innerHTML = shelves.map(s => `
       <button data-id="${s.id}" class="press bg-surface border border-hairline rounded-2xl p-4 flex flex-col items-center justify-center gap-1 shadow-sm">
         <span class="font-display font-semibold text-2xl text-primary">${s.floor}</span>
         <span class="text-xs text-muted">ชั้น</span>
       </button>`).join('');
-    root.querySelectorAll('#s-list button').forEach(b => b.onclick = () => go('count', { ...state, step: 'items', shelfId: b.dataset.id, floor: shelves.find(x=>x.id===b.dataset.id).floor }));
-    return;
-  }
+        root.querySelectorAll('#s-list button').forEach(b => b.onclick = () => go('count', { ...state, step: 'items', shelfId: b.dataset.id, floor: shelves.find(x => x.id === b.dataset.id).floor }));
+        return;
+      }
 
-  if (step === 'items') {
-    countCart = {};
-    root.innerHTML = `
+      if (step === 'items') {
+        countCart = {};
+        root.innerHTML = `
       <button id="back" class="press text-sm text-muted flex items-center gap-1 mb-3">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg> กลับ
       </button>
       <h1 class="font-display text-2xl font-semibold mb-1">${state.buildingName} · ชั้น ${state.floor}</h1>
       <p class="text-muted text-sm mb-4">แตะ + / − หรือกดค้างเพื่อปรับเร็ว</p>
       <div id="items-list" class="space-y-4 mb-4">${skeleton('h-28')}${skeleton('h-28')}</div>`;
-    root.querySelector('#back').onclick = () => go('count', { ...state, step: 'shelf' });
+        root.querySelector('#back').onclick = () => go('count', { ...state, step: 'shelf' });
 
-    const items = await DB.getShelfItems(state.shelfId);
-    if (items.length === 0) {
-      root.querySelector('#items-list').innerHTML = `<div class="text-center py-10 text-muted text-sm">ยังไม่มีสินค้าบนชั้นนี้<br>ไปที่ "จัดการ" เพื่อเพิ่มสินค้าเข้าชั้น</div>`;
-      return;
-    }
-    items.forEach(it => countCart[it.id] = { actual: it.quantity, expected: it.quantity, cost_price: it.cost_price, product: it.product });
+        const items = await DB.getShelfItems(state.shelfId);
+        if (items.length === 0) {
+          root.querySelector('#items-list').innerHTML = `<div class="text-center py-10 text-muted text-sm">ยังไม่มีสินค้าบนชั้นนี้<br>ไปที่ "จัดการ" เพื่อเพิ่มสินค้าเข้าชั้น</div>`;
+          return;
+        }
+        items.forEach(it => countCart[it.id] = { actual: it.quantity, expected: it.quantity, cost_price: it.cost_price, product: it.product });
 
-    const list = root.querySelector('#items-list');
-    list.innerHTML = items.map(it => itemCardHtml(it)).join('');
-    items.forEach(it => bindItemCard(root, it.id));
+        const list = root.querySelector('#items-list');
+        list.innerHTML = items.map(it => itemCardHtml(it)).join('');
+        items.forEach(it => bindItemCard(root, it.id));
 
-    // sticky save bar — docked above the bottom nav, never overlapping list items
-    const bar = document.createElement('div');
-    bar.id = 'save-bar';
-    bar.className = 'fixed left-0 right-0 z-50 bg-gradient-to-t from-bg via-bg to-bg/0 pt-6';
-    bar.innerHTML = `
+        // sticky save bar — docked above the bottom nav, never overlapping list items
+        const bar = document.createElement('div');
+        bar.id = 'save-bar';
+        bar.className = 'fixed left-0 right-0 z-50 bg-gradient-to-t from-bg via-bg to-bg/0 pt-6';
+        bar.innerHTML = `
       <div class="max-w-md mx-auto px-4 pb-3">
         <button id="save-audit" class="press w-full bg-primary text-white font-display font-medium text-base py-4 rounded-2xl shadow-lg flex items-center justify-center gap-2">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
           บันทึกการนับสต็อก
         </button>
       </div>`;
-    root.appendChild(bar);
-    root.querySelector('#save-audit').onclick = () => saveAudit(root, state);
-    dockFooterBar(bar, list);
-    return;
-  }
-}
+        root.appendChild(bar);
+        root.querySelector('#save-audit').onclick = () => saveAudit(root, state);
+        dockFooterBar(bar, list);
+        return;
+      }
+    }
 
-// Measures the real height of the fixed bottom nav + save bar, then docks the bar
-// directly above the nav and pads the scrollable list so the last card is never hidden.
-function dockFooterBar(bar, list) {
-  const place = () => {
-    const nav = document.querySelector('nav');
-    const navH = nav ? nav.getBoundingClientRect().height : 72;
-    bar.style.bottom = navH + 'px';
-    const barH = bar.getBoundingClientRect().height;
-    list.style.paddingBottom = (barH + 20) + 'px';
-  };
-  requestAnimationFrame(place);
-  window.addEventListener('resize', place, { once: true });
-}
 
-function itemCardHtml(it) {
-  return `
+    function itemCardHtml(it) {
+      return `
   <div class="shelf-tag bg-surface border border-hairline rounded-2xl pt-5 pb-4 px-4 shadow-sm relative" data-card="${it.id}">
     <span class="notch" style="left:50%; transform:translateX(-50%);"></span>
     <div class="flex items-center gap-3 mb-3">
       <div class="w-12 h-12 rounded-xl bg-primary-light flex items-center justify-center text-primary font-display font-semibold overflow-hidden shrink-0">
-        ${it.product.image_url ? `<img src="${it.product.image_url}" class="w-full h-full object-cover">` : it.product.name.slice(0,1)}
+        ${it.product.image_url ? `<img src="${it.product.image_url}" class="w-full h-full object-cover">` : it.product.name.slice(0, 1)}
       </div>
       <div class="min-w-0 flex-1">
         <p class="font-medium text-[15px] truncate">${it.product.name}</p>
@@ -591,111 +853,161 @@ function itemCardHtml(it) {
       <button data-plus="${it.id}" class="press w-12 h-12 rounded-full bg-primary-light text-primary flex items-center justify-center font-display text-2xl font-semibold">+</button>
     </div>
   </div>`;
-}
-
-function bindItemCard(root, id) {
-  const input = root.querySelector(`[data-input="${id}"]`);
-  const minus = root.querySelector(`[data-minus="${id}"]`);
-  const plus = root.querySelector(`[data-plus="${id}"]`);
-  const diffEl = root.querySelector(`[data-diff="${id}"]`);
-
-  function setVal(v) {
-    v = Math.max(0, v);
-    input.value = v;
-    countCart[id].actual = v;
-    updateDiff();
-  }
-  function updateDiff() {
-    const diff = countCart[id].actual - countCart[id].expected;
-    diffEl.classList.remove('pop-in'); void diffEl.offsetWidth; diffEl.classList.add('pop-in');
-    if (diff < 0) {
-      const loss = Math.abs(diff) * countCart[id].cost_price;
-      diffEl.className = 'pop-in text-xs font-display font-semibold px-2 py-1 rounded-full bg-danger-light text-danger tnum';
-      diffEl.textContent = `${diff} ชิ้น (ขาดทุน ฿${fmtMoney(loss)})`;
-    } else if (diff > 0) {
-      diffEl.className = 'pop-in text-xs font-display font-semibold px-2 py-1 rounded-full bg-success-light text-success tnum';
-      diffEl.textContent = `+${diff} ชิ้น`;
-    } else {
-      diffEl.className = 'pop-in text-xs font-display font-semibold px-2 py-1 rounded-full bg-hairline text-muted tnum';
-      diffEl.textContent = '0';
     }
-  }
 
-  input.addEventListener('input', () => setVal(parseInt(input.value || '0', 10)));
+    function bindItemCard(root, id) {
+      const input = root.querySelector(`[data-input="${id}"]`);
+      const minus = root.querySelector(`[data-minus="${id}"]`);
+      const plus = root.querySelector(`[data-plus="${id}"]`);
+      const diffEl = root.querySelector(`[data-diff="${id}"]`);
 
-  function holdRepeat(btn, delta) {
-    let interval, timeout;
-    const start = (e) => {
-      e.preventDefault();
-      setVal(countCart[id].actual + delta);
-      timeout = setTimeout(() => { interval = setInterval(() => setVal(countCart[id].actual + delta), 90); }, 400);
-    };
-    const stop = () => { clearTimeout(timeout); clearInterval(interval); };
-    btn.addEventListener('pointerdown', start);
-    ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => btn.addEventListener(ev, stop));
-  }
-  holdRepeat(minus, -1);
-  holdRepeat(plus, 1);
-}
+      function setVal(v) {
+        v = Math.max(0, v);
+        input.value = v;
+        countCart[id].actual = v;
+        updateDiff();
+      }
+      function updateDiff() {
+        const diff = countCart[id].actual - countCart[id].expected;
+        diffEl.classList.remove('pop-in'); void diffEl.offsetWidth; diffEl.classList.add('pop-in');
+        if (diff < 0) {
+          const loss = Math.abs(diff) * countCart[id].cost_price;
+          diffEl.className = 'pop-in text-xs font-display font-semibold px-2 py-1 rounded-full bg-danger-light text-danger tnum';
+          diffEl.textContent = `${diff} ชิ้น (ขาดทุน ฿${fmtMoney(loss)})`;
+        } else if (diff > 0) {
+          diffEl.className = 'pop-in text-xs font-display font-semibold px-2 py-1 rounded-full bg-success-light text-success tnum';
+          diffEl.textContent = `+${diff} ชิ้น`;
+        } else {
+          diffEl.className = 'pop-in text-xs font-display font-semibold px-2 py-1 rounded-full bg-hairline text-muted tnum';
+          diffEl.textContent = '0';
+        }
+      }
 
-async function saveAudit(root, state) {
-  const btn = root.querySelector('#save-audit');
-  btn.disabled = true;
-  btn.innerHTML = `<span class="animate-spin inline-block w-5 h-5 border-2 border-white/40 border-t-white rounded-full"></span>`;
-  const entries = Object.entries(countCart);
-  const accounts = await DB.getAccounts().catch(() => []);
-  const businessAccount = accounts.find(a => a.type === 'business') || accounts[0];
+      input.addEventListener('input', () => setVal(parseInt(input.value || '0', 10)));
 
-  // Was: a `for...of` loop with `await` inside, so each item's save request
-  // waited for the previous one to fully round-trip before starting the next —
-  // for N shelf items that's N sequential network calls back to back, which is
-  // exactly the "หน่วง" feeling on the save button. Each item is independent
-  // (different product_shelf_id), so they're safe to fire in parallel.
-  const results = await Promise.allSettled(entries.map(([psId, c]) => {
-    const payload = {
-      product_shelf_id: psId, expected_qty: c.expected, actual_qty: c.actual,
-      cost_price: c.cost_price, product_name: c.product.name, account_id: businessAccount?.id,
-    };
-    if (!navigator.onLine) { pushToQueue({ payload }); return Promise.resolve('offline'); }
-    return DB.processStockAudit(payload)
-      .then(() => 'ok')
-      .catch(() => { pushToQueue({ payload }); return 'offline'; });
-  }));
-  let okCount = results.filter(r => r.status === 'fulfilled' && r.value === 'ok').length;
-  let offlineCount = results.filter(r => r.status === 'fulfilled' && r.value === 'offline').length;
-  updateNetBadge();
-  if (offlineCount > 0 && okCount === 0) toast(`บันทึกในเครื่องแล้ว (ออฟไลน์) — จะซิงค์อัตโนมัติเมื่อมีเน็ต`, 'offline');
-  else if (offlineCount > 0) toast(`บันทึกแล้ว ${okCount} รายการ, อีก ${offlineCount} รอซิงค์`, 'info');
-  else toast('บันทึกการนับสต็อกสำเร็จ ✓', 'success');
+      function holdRepeat(btn, delta) {
+        let interval, timeout;
+        const start = (e) => {
+          e.preventDefault();
+          setVal(countCart[id].actual + delta);
+          timeout = setTimeout(() => { interval = setInterval(() => setVal(countCart[id].actual + delta), 90); }, 400);
+        };
+        const stop = () => { clearTimeout(timeout); clearInterval(interval); };
+        btn.addEventListener('pointerdown', start);
+        ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => btn.addEventListener(ev, stop));
+      }
+      holdRepeat(minus, -1);
+      holdRepeat(plus, 1);
+    }
 
-  go('dashboard');
-}
+    async function saveAudit(root, state) {
+      const btn = root.querySelector('#save-audit');
+      const entries = Object.entries(countCart);
+      const accounts = await DB.getAccounts().catch(() => []);
+      const businessAccount = accounts.find(a => a.type === 'business') || accounts[0];
 
-/* ============================================================
-   9) FINANCE
-   ============================================================ */
-const QUICK_CATS_KEY = 'quick_categories';
-const DEFAULT_QUICK_CATS = [
-  { label: 'ค่าหอพัก', type: 'expense', category: 'ค่าหอพัก' },
-  { label: 'ค่าไฟ/น้ำ', type: 'expense', category: 'ค่าสาธารณูปโภค' },
-  { label: 'ยอดขาย', type: 'income', category: 'ยอดขาย' },
-  { label: 'ซื้อสินค้าเข้าสต็อก', type: 'expense', category: 'ซื้อสินค้า' },
-];
-function loadQuickCats() {
-  try { const v = JSON.parse(localStorage.getItem(QUICK_CATS_KEY)); return Array.isArray(v) ? v : DEFAULT_QUICK_CATS; }
-  catch { return DEFAULT_QUICK_CATS; }
-}
-function saveQuickCats(list) { localStorage.setItem(QUICK_CATS_KEY, JSON.stringify(list)); }
+      // ค้นหารายการที่ "ของหาย" (actual < expected)
+      const lostItems = entries.filter(([psId, c]) => c.actual < c.expected);
 
-async function renderFinance(root) {
-  const accounts = await DB.getAccounts();
-  let selectedAccount = accounts[0]?.id;
-  let txType = 'expense';
-  let quickButtons = loadQuickCats();
-  let editingQuick = false;
+      // ฟังก์ชันตัวบันทึกข้อมูลหลัก
+      const executeSave = async (reasonPayloads = {}) => {
+        btn.disabled = true;
+        btn.innerHTML = `<span class="animate-spin inline-block w-5 h-5 border-2 border-white/40 border-t-white rounded-full"></span>`;
 
-  root.innerHTML = `
-    <h1 class="font-display text-2xl font-semibold mb-4">รายรับ-รายจ่าย</h1>
+        const results = await Promise.allSettled(entries.map(([psId, c]) => {
+          const payload = {
+            product_shelf_id: psId, expected_qty: c.expected, actual_qty: c.actual,
+            cost_price: c.cost_price, product_name: c.product.name, account_id: businessAccount?.id,
+            reason: reasonPayloads[psId] || null // แนบเหตุผลไปให้หลังบ้าน
+          };
+          if (!navigator.onLine) { pushToQueue({ payload }); return Promise.resolve('offline'); }
+          return DB.processStockAudit(payload).then(() => 'ok').catch(() => { pushToQueue({ payload }); return 'offline'; });
+        }));
+
+        let okCount = results.filter(r => r.status === 'fulfilled' && r.value === 'ok').length;
+        let offlineCount = results.filter(r => r.status === 'fulfilled' && r.value === 'offline').length;
+        updateNetBadge();
+
+        if (offlineCount > 0 && okCount === 0) toast(`บันทึกในเครื่องแล้ว (รอซิงค์)`, 'offline');
+        else if (offlineCount > 0) toast(`บันทึกแล้ว ${okCount} รายการ, รอซิงค์ ${offlineCount}`, 'info');
+        else toast('บันทึกการนับสต็อกสำเร็จ ✓', 'success');
+        go('dashboard');
+      };
+
+      // ถ้ามีของหาย ให้เด้ง Modal ถามสาเหตุ
+      if (lostItems.length > 0) {
+        const modalWrap = document.createElement('div');
+        modalWrap.className = 'fixed inset-0 z-[60] bg-ink/40 backdrop-blur-sm flex flex-col justify-end p-4 screen';
+        modalWrap.innerHTML = `
+      <div class="bg-surface rounded-3xl p-5 w-full max-w-md mx-auto shadow-2xl pop-in">
+        <h3 class="font-display font-semibold text-lg text-danger mb-1">พบสินค้าขาดหาย ${lostItems.length} รายการ</h3>
+        <p class="text-xs text-muted mb-4">โปรดระบุสาเหตุ เพื่อให้ระบบลงบันทึกค่าใช้จ่ายได้ถูกต้อง</p>
+        <div class="max-h-[50vh] overflow-y-auto space-y-3 mb-4">
+          ${lostItems.map(([psId, c]) => `
+            <div class="bg-bg rounded-xl p-3 border border-hairline">
+              <p class="text-sm font-medium mb-1">${c.product.name} <span class="text-danger">(หาย ${c.expected - c.actual} ชิ้น)</span></p>
+              <select data-reason-id="${psId}" class="w-full text-sm bg-surface rounded-lg px-2 py-2 outline-none border border-hairline">
+                <option value="สูญหาย/ไม่ทราบสาเหตุ">❓ สูญหาย/ไม่ทราบสาเหตุ</option>
+                <option value="สินค้าชำรุด/แตกหัก">💥 สินค้าชำรุด/แตกหัก</option>
+                <option value="หมดอายุ">⏳ สินค้าหมดอายุ</option>
+                <option value="นำไปใช้ส่วนตัว">👤 นำไปใช้ส่วนตัว</option>
+              </select>
+            </div>
+          `).join('')}
+        </div>
+        <div class="flex gap-2">
+          <button id="cancel-reason" class="press flex-1 py-3 bg-hairline text-ink rounded-xl font-medium text-sm">ยกเลิก</button>
+          <button id="confirm-reason" class="press flex-[2] py-3 bg-danger text-white rounded-xl font-medium text-sm">ยืนยันและบันทึก</button>
+        </div>
+      </div>
+    `;
+        document.body.appendChild(modalWrap);
+
+        modalWrap.querySelector('#cancel-reason').onclick = () => modalWrap.remove();
+        modalWrap.querySelector('#confirm-reason').onclick = () => {
+          const reasons = {};
+          modalWrap.querySelectorAll('[data-reason-id]').forEach(sel => {
+            reasons[sel.dataset.reasonId] = sel.value;
+          });
+          modalWrap.remove();
+          executeSave(reasons);
+        };
+      } else {
+        // ถ้าของไม่หาย กดเซฟได้เลย
+        executeSave();
+      }
+    }
+    /* ============================================================
+       9) FINANCE (อัปเดตเพิ่มระบบโอนเงิน)
+       ============================================================ */
+    const QUICK_CATS_KEY = 'quick_categories';
+    const DEFAULT_QUICK_CATS = [
+      { label: 'ค่าหอพัก', type: 'expense', category: 'ค่าหอพัก' },
+      { label: 'ค่าไฟ/น้ำ', type: 'expense', category: 'ค่าสาธารณูปโภค' },
+      { label: 'ยอดขาย', type: 'income', category: 'ยอดขาย' },
+      { label: 'ซื้อสินค้าเข้าสต็อก', type: 'expense', category: 'ซื้อสินค้า' },
+    ];
+    function loadQuickCats() {
+      try { const v = JSON.parse(localStorage.getItem(QUICK_CATS_KEY)); return Array.isArray(v) ? v : DEFAULT_QUICK_CATS; }
+      catch { return DEFAULT_QUICK_CATS; }
+    }
+    function saveQuickCats(list) { localStorage.setItem(QUICK_CATS_KEY, JSON.stringify(list)); }
+
+    async function renderFinance(root) {
+      const accounts = await DB.getAccounts();
+      let selectedAccount = accounts[0]?.id;
+      let txType = 'expense'; // 'expense', 'income', 'transfer'
+      let quickButtons = loadQuickCats();
+      let editingQuick = false;
+
+      root.innerHTML = `
+    <div class="flex items-center justify-between mb-4">
+      <h1 class="font-display text-2xl font-semibold">รายรับ-รายจ่าย</h1>
+      <button id="go-accounts" class="press text-xs font-medium text-primary flex items-center gap-1 bg-primary-light px-3 py-1.5 rounded-full">
+        ดูแยกบัญชี
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+      </button>
+    </div>
 
   <!-- แยกเป็น 2 กลุ่ม: ร้านค้า กับ ส่วนตัว -->
   <div class="space-y-3 mb-4">
@@ -703,7 +1015,7 @@ async function renderFinance(root) {
       <p class="text-xs font-semibold text-primary mb-1.5">🏪 บัญชีร้านค้า (Business)</p>
       <div class="grid grid-cols-2 gap-2">
         ${accounts.filter(a => a.type === 'business').map(a => `
-          <button data-acc="${a.id}" class="press rounded-2xl border p-3 text-left ${a.id===selectedAccount?'border-primary bg-primary-light':'border-hairline bg-surface'}">
+          <button data-acc="${a.id}" class="press rounded-2xl border p-3 text-left ${a.id === selectedAccount ? 'border-primary bg-primary-light' : 'border-hairline bg-surface'}">
             <p class="text-xs text-muted truncate">${a.name}</p>
             <p class="font-display font-semibold tnum text-sm">฿${fmtMoney(a.balance)}</p>
           </button>
@@ -715,7 +1027,7 @@ async function renderFinance(root) {
       <p class="text-xs font-semibold text-muted mb-1.5">👤 บัญชีส่วนตัว (Personal)</p>
       <div class="grid grid-cols-2 gap-2">
         ${accounts.filter(a => a.type === 'personal').map(a => `
-          <button data-acc="${a.id}" class="press rounded-2xl border p-3 text-left ${a.id===selectedAccount?'border-primary bg-primary-light':'border-hairline bg-surface'}">
+          <button data-acc="${a.id}" class="press rounded-2xl border p-3 text-left ${a.id === selectedAccount ? 'border-primary bg-primary-light' : 'border-hairline bg-surface'}">
             <p class="text-xs text-muted truncate">${a.name}</p>
             <p class="font-display font-semibold tnum text-sm">฿${fmtMoney(a.balance)}</p>
           </button>
@@ -725,40 +1037,57 @@ async function renderFinance(root) {
   </div>
 
     <div class="bg-surface border border-hairline rounded-2xl p-4 mb-4">
+      
+      <!-- Toggle 3 สถานะ (เพิ่มโอนเงิน) เปลี่ยนความกว้างตัวสไลด์เป็น w-1/3 -->
       <div class="flex bg-bg rounded-full p-1 mb-4 relative">
-        <div id="seg-thumb" class="seg-thumb absolute top-1 bottom-1 w-1/2 rounded-full bg-danger" style="transform:translateX(0%)"></div>
+        <div id="seg-thumb" class="seg-thumb absolute top-1 bottom-1 w-1/3 rounded-full bg-danger" style="transform:translateX(0%)"></div>
         <button data-type="expense" class="relative z-10 flex-1 py-2 text-sm font-medium rounded-full text-white">รายจ่าย</button>
         <button data-type="income" class="relative z-10 flex-1 py-2 text-sm font-medium rounded-full text-ink">รายรับ</button>
+        <button data-type="transfer" class="relative z-10 flex-1 py-2 text-sm font-medium rounded-full text-ink">โอนเงิน</button>
       </div>
 
-      <div class="flex items-center justify-between mb-2">
-        <span class="text-xs text-muted">รายการลัด</span>
-        <button id="quick-edit-toggle" class="press text-xs font-medium text-primary flex items-center gap-1">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
-          <span id="quick-edit-label">ปรับแต่ง</span>
-        </button>
-      </div>
-      <div class="flex flex-wrap gap-2 mb-2" id="quick-cats"></div>
-      <div id="quick-add-form" class="hidden bg-bg rounded-2xl p-3 mb-4 space-y-2">
-        <input id="qc-label" placeholder="ชื่อปุ่ม เช่น ค่าเน็ต" class="w-full text-sm bg-surface rounded-xl px-3 py-2 outline-none border border-hairline">
-        <input id="qc-category" placeholder="หมวดหมู่ที่จะบันทึก" class="w-full text-sm bg-surface rounded-xl px-3 py-2 outline-none border border-hairline">
-        <div class="flex bg-surface rounded-full p-1 border border-hairline">
-          <button data-qctype="expense" class="qc-type-btn flex-1 py-1.5 text-xs font-medium rounded-full bg-danger text-white">รายจ่าย</button>
-          <button data-qctype="income" class="qc-type-btn flex-1 py-1.5 text-xs font-medium rounded-full text-ink">รายรับ</button>
+      <!-- หมวดหมู่ลัด (จะถูกซ่อนถ้าเลือกโอนเงิน) -->
+      <div id="quick-cats-section">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs text-muted">รายการลัด</span>
+          <button id="quick-edit-toggle" class="press text-xs font-medium text-primary flex items-center gap-1">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+            <span id="quick-edit-label">ปรับแต่ง</span>
+          </button>
         </div>
-        <button id="qc-save" class="press w-full bg-primary text-white text-sm font-medium py-2 rounded-xl">เพิ่มรายการลัด</button>
+        <div class="flex flex-wrap gap-2 mb-2" id="quick-cats"></div>
+        <div id="quick-add-form" class="hidden bg-bg rounded-2xl p-3 mb-4 space-y-2">
+          <input id="qc-label" placeholder="ชื่อปุ่ม เช่น ค่าเน็ต" class="w-full text-sm bg-surface rounded-xl px-3 py-2 outline-none border border-hairline">
+          <input id="qc-category" placeholder="หมวดหมู่ที่จะบันทึก" class="w-full text-sm bg-surface rounded-xl px-3 py-2 outline-none border border-hairline">
+          <div class="flex bg-surface rounded-full p-1 border border-hairline">
+            <button data-qctype="expense" class="qc-type-btn flex-1 py-1.5 text-xs font-medium rounded-full bg-danger text-white">รายจ่าย</button>
+            <button data-qctype="income" class="qc-type-btn flex-1 py-1.5 text-xs font-medium rounded-full text-ink">รายรับ</button>
+          </div>
+          <button id="qc-save" class="press w-full bg-primary text-white text-sm font-medium py-2 rounded-xl">เพิ่มรายการลัด</button>
+        </div>
       </div>
 
       <label class="text-xs text-muted mb-1 block">จำนวนเงิน</label>
       <input id="tx-amount" type="number" inputmode="decimal" placeholder="0.00" class="w-full font-display text-3xl font-semibold tnum bg-transparent border-b-2 border-hairline focus:border-primary outline-none py-2 mb-4">
 
-      <label class="text-xs text-muted mb-1 block">หมวดหมู่</label>
-      <input id="tx-category" type="text" placeholder="เช่น ค่าหอพัก" class="w-full text-sm bg-bg rounded-xl px-3 py-2.5 mb-3 outline-none focus:ring-2 focus:ring-primary/30">
+      <!-- สำหรับโอนเงิน (จะโชว์เมื่อกดแท็บโอนเงิน) -->
+      <div id="transfer-dest-wrap" class="hidden mb-3">
+         <label class="text-xs text-muted mb-1 block">โอนไปยังบัญชีปลายทาง</label>
+         <select id="transfer-to" class="w-full text-sm bg-bg rounded-xl px-3 py-2.5 outline-none focus:ring-2 focus:ring-primary/30">
+           ${accounts.map(a => `<option value="${a.id}">${a.name} (${a.type === 'business' ? 'ร้าน' : 'ส่วนตัว'})</option>`).join('')}
+         </select>
+      </div>
+
+      <!-- สำหรับรายรับ-จ่ายปกติ -->
+      <div id="normal-tx-fields">
+        <label class="text-xs text-muted mb-1 block">หมวดหมู่</label>
+        <input id="tx-category" type="text" placeholder="เช่น ค่าหอพัก" class="w-full text-sm bg-bg rounded-xl px-3 py-2.5 mb-3 outline-none focus:ring-2 focus:ring-primary/30">
+      </div>
 
       <label class="text-xs text-muted mb-1 block">โน้ต (ไม่บังคับ)</label>
       <input id="tx-note" type="text" placeholder="รายละเอียดเพิ่มเติม" class="w-full text-sm bg-bg rounded-xl px-3 py-2.5 mb-4 outline-none focus:ring-2 focus:ring-primary/30">
 
-      <button id="tx-save" class="press w-full bg-primary text-white font-display font-medium py-3.5 rounded-2xl">บันทึกรายการ</button>
+      <button id="tx-save" class="press w-full bg-danger text-white font-display font-medium py-3.5 rounded-2xl transition-colors">บันทึกรายการ</button>
     </div>
 
     <details class="bg-surface border border-hairline rounded-2xl p-4 mb-4">
@@ -774,118 +1103,176 @@ async function renderFinance(root) {
     <div id="tx-list" class="space-y-2">${skeleton('h-14')}</div>
   `;
 
-  root.querySelectorAll('[data-acc]').forEach(btn => btn.onclick = () => {
-    selectedAccount = btn.dataset.acc;
-    root.querySelectorAll('[data-acc]').forEach(b => b.className = b.className.replace('border-primary bg-primary-light', 'border-hairline bg-surface'));
-    btn.className = btn.className.replace('border-hairline bg-surface', 'border-primary bg-primary-light');
-  });
+      root.querySelector('#go-accounts').onclick = () => go('accounts');
 
-  const seg = root.querySelector('#seg-thumb');
-  root.querySelectorAll('[data-type]').forEach(btn => btn.onclick = () => {
-    txType = btn.dataset.type;
-    seg.style.transform = txType === 'expense' ? 'translateX(0%)' : 'translateX(100%)';
-    seg.className = seg.className.replace(/bg-\w+/, txType === 'expense' ? 'bg-danger' : 'bg-success');
-    root.querySelectorAll('[data-type]').forEach(b => b.classList.remove('text-white'));
-    btn.classList.add('text-white');
-  });
+      root.querySelectorAll('[data-acc]').forEach(btn => btn.onclick = () => {
+        selectedAccount = btn.dataset.acc;
+        root.querySelectorAll('[data-acc]').forEach(b => b.className = b.className.replace('border-primary bg-primary-light', 'border-hairline bg-surface'));
+        btn.className = btn.className.replace('border-hairline bg-surface', 'border-primary bg-primary-light');
+      });
 
-  function renderQuickCats() {
-    const wrap = root.querySelector('#quick-cats');
-    wrap.innerHTML = quickButtons.map((q, i) => `
+      const seg = root.querySelector('#seg-thumb');
+      const saveBtnTheme = root.querySelector('#tx-save');
+
+      // สลับแท็บ รายจ่าย / รายรับ / โอนเงิน
+      root.querySelectorAll('[data-type]').forEach(btn => btn.onclick = () => {
+        txType = btn.dataset.type;
+
+        const idx = ['expense', 'income', 'transfer'].indexOf(txType);
+        seg.style.transform = `translateX(${idx * 100}%)`;
+
+        let themeColor = 'bg-danger';
+        if (txType === 'income') themeColor = 'bg-success';
+        if (txType === 'transfer') themeColor = 'bg-primary';
+
+        seg.className = `seg-thumb absolute top-1 bottom-1 w-1/3 rounded-full ${themeColor}`;
+        saveBtnTheme.className = `press w-full text-white font-display font-medium py-3.5 rounded-2xl transition-colors ${themeColor}`;
+        saveBtnTheme.textContent = txType === 'transfer' ? 'ยืนยันการโอนเงิน' : 'บันทึกรายการ';
+
+        root.querySelectorAll('[data-type]').forEach(b => {
+          b.classList.remove('text-white');
+          b.classList.add('text-ink');
+        });
+        btn.classList.remove('text-ink');
+        btn.classList.add('text-white');
+
+        // ซ่อน-โชว์ ฟิลด์ตามประเภท
+        if (txType === 'transfer') {
+          root.querySelector('#normal-tx-fields').classList.add('hidden');
+          root.querySelector('#quick-cats-section').classList.add('hidden');
+          root.querySelector('#transfer-dest-wrap').classList.remove('hidden');
+        } else {
+          root.querySelector('#normal-tx-fields').classList.remove('hidden');
+          root.querySelector('#quick-cats-section').classList.remove('hidden');
+          root.querySelector('#transfer-dest-wrap').classList.add('hidden');
+        }
+      });
+
+      // ส่วนของการเรนเดอร์หมวดหมู่ลัด (Quick Cats)
+      function renderQuickCats() {
+        const wrap = root.querySelector('#quick-cats');
+        wrap.innerHTML = quickButtons.map((q, i) => `
       <span class="inline-flex items-center gap-1 pop-in">
         <button data-qidx="${i}" class="press text-xs font-medium px-3 py-1.5 rounded-full ${editingQuick ? 'bg-hairline text-muted' : 'bg-hairline'}" ${editingQuick ? 'disabled' : ''}>${q.label}</button>
         ${editingQuick ? `<button data-qdel="${i}" class="press w-6 h-6 rounded-full bg-danger-light text-danger flex items-center justify-center text-xs font-semibold">×</button>` : ''}
       </span>
     `).join('') + (editingQuick ? `<button id="quick-add-open" class="press text-xs font-medium px-3 py-1.5 rounded-full border border-dashed border-primary text-primary">+ เพิ่ม</button>` : '');
 
-    if (!editingQuick) {
-      wrap.querySelectorAll('[data-qidx]').forEach(btn => btn.onclick = () => {
-        const q = quickButtons[btn.dataset.qidx];
-        root.querySelector(`[data-type="${q.type}"]`).click();
-        root.querySelector('#tx-category').value = q.category;
+        if (!editingQuick) {
+          wrap.querySelectorAll('[data-qidx]').forEach(btn => btn.onclick = () => {
+            const q = quickButtons[btn.dataset.qidx];
+            root.querySelector(`[data-type="${q.type}"]`).click();
+            root.querySelector('#tx-category').value = q.category;
+          });
+        } else {
+          wrap.querySelectorAll('[data-qdel]').forEach(btn => btn.onclick = () => {
+            quickButtons.splice(btn.dataset.qdel, 1);
+            saveQuickCats(quickButtons);
+            renderQuickCats();
+          });
+          const openBtn = wrap.querySelector('#quick-add-open');
+          if (openBtn) openBtn.onclick = () => root.querySelector('#quick-add-form').classList.remove('hidden');
+        }
+      }
+      renderQuickCats();
+
+      let qcType = 'expense';
+      root.querySelectorAll('.qc-type-btn').forEach(btn => btn.onclick = () => {
+        qcType = btn.dataset.qctype;
+        root.querySelectorAll('.qc-type-btn').forEach(b => { b.classList.remove('bg-danger', 'bg-success', 'text-white'); b.classList.add('text-ink'); });
+        btn.classList.remove('text-ink');
+        btn.classList.add(qcType === 'expense' ? 'bg-danger' : 'bg-success', 'text-white');
       });
-    } else {
-      wrap.querySelectorAll('[data-qdel]').forEach(btn => btn.onclick = () => {
-        quickButtons.splice(btn.dataset.qdel, 1);
+
+      root.querySelector('#qc-save').onclick = () => {
+        const label = root.querySelector('#qc-label').value.trim();
+        const category = root.querySelector('#qc-category').value.trim();
+        if (!label || !category) return toast('กรอกชื่อปุ่มและหมวดหมู่ให้ครบ', 'error');
+        quickButtons.push({ label, type: qcType, category });
         saveQuickCats(quickButtons);
+        root.querySelector('#qc-label').value = '';
+        root.querySelector('#qc-category').value = '';
+        root.querySelector('#quick-add-form').classList.add('hidden');
+        toast('เพิ่มรายการลัดสำเร็จ ✓', 'success');
         renderQuickCats();
-      });
-      const openBtn = wrap.querySelector('#quick-add-open');
-      if (openBtn) openBtn.onclick = () => root.querySelector('#quick-add-form').classList.remove('hidden');
-    }
-  }
-  renderQuickCats();
+      };
 
-  let qcType = 'expense';
-  root.querySelectorAll('.qc-type-btn').forEach(btn => btn.onclick = () => {
-    qcType = btn.dataset.qctype;
-    root.querySelectorAll('.qc-type-btn').forEach(b => { b.classList.remove('bg-danger', 'bg-success', 'text-white'); b.classList.add('text-ink'); });
-    btn.classList.remove('text-ink');
-    btn.classList.add(qcType === 'expense' ? 'bg-danger' : 'bg-success', 'text-white');
-  });
-  root.querySelector('#qc-save').onclick = () => {
-    const label = root.querySelector('#qc-label').value.trim();
-    const category = root.querySelector('#qc-category').value.trim();
-    if (!label || !category) return toast('กรอกชื่อปุ่มและหมวดหมู่ให้ครบ', 'error');
-    quickButtons.push({ label, type: qcType, category });
-    saveQuickCats(quickButtons);
-    root.querySelector('#qc-label').value = '';
-    root.querySelector('#qc-category').value = '';
-    root.querySelector('#quick-add-form').classList.add('hidden');
-    toast('เพิ่มรายการลัดสำเร็จ ✓', 'success');
-    renderQuickCats();
-  };
-  root.querySelector('#quick-edit-toggle').onclick = () => {
-    editingQuick = !editingQuick;
-    root.querySelector('#quick-edit-label').textContent = editingQuick ? 'เสร็จสิ้น' : 'ปรับแต่ง';
-    if (!editingQuick) root.querySelector('#quick-add-form').classList.add('hidden');
-    renderQuickCats();
-  };
+      root.querySelector('#quick-edit-toggle').onclick = () => {
+        editingQuick = !editingQuick;
+        root.querySelector('#quick-edit-label').textContent = editingQuick ? 'เสร็จสิ้น' : 'ปรับแต่ง';
+        if (!editingQuick) root.querySelector('#quick-add-form').classList.add('hidden');
+        renderQuickCats();
+      };
 
-  const txSaveBtn = root.querySelector('#tx-save');
-  txSaveBtn.onclick = async () => {
-    const amount = parseFloat(root.querySelector('#tx-amount').value);
-    const category = root.querySelector('#tx-category').value.trim();
-    const note = root.querySelector('#tx-note').value.trim();
-    if (!amount || amount <= 0) return toast('กรุณาใส่จำนวนเงิน', 'error');
-    if (!category) return toast('กรุณาใส่หมวดหมู่', 'error');
-    if (txSaveBtn.disabled) return; // guard against double-tap creating a duplicate transaction
-    txSaveBtn.disabled = true;
-    try {
-      await DB.addTransaction({ account_id: selectedAccount, type: txType, category, amount, note });
-      toast('บันทึกรายการสำเร็จ ✓', 'success');
-      go('finance');
-    } catch (e) {
-      toast('บันทึกไม่สำเร็จ: ' + e.message, 'error');
-      txSaveBtn.disabled = false;
-    }
-  };
+      // ปุ่มเซฟ (จัดการการโอนเงินที่นี่)
+      const txSaveBtn = root.querySelector('#tx-save');
+      txSaveBtn.onclick = async () => {
+        const amount = parseFloat(root.querySelector('#tx-amount').value);
+        const note = root.querySelector('#tx-note').value.trim();
 
-  root.querySelector('#cash-recon').onclick = async () => {
-    const actual = parseFloat(root.querySelector('#cash-actual').value);
-    if (isNaN(actual)) return toast('กรุณาใส่จำนวนเงินที่นับได้', 'error');
-    const acc = accounts.find(a => a.id === selectedAccount);
-    const diff = actual - acc.balance;
-    if (diff === 0) return toast('ยอดตรงกันอยู่แล้ว ✓', 'success');
-    try {
-      await DB.addTransaction({ account_id: selectedAccount, type: diff > 0 ? 'income' : 'expense', category: 'กระทบยอดเงินสด', amount: Math.abs(diff), note: 'ปรับยอดให้ตรงกับเงินจริง' });
-      toast(`ปรับยอด ${diff > 0 ? '+' : ''}฿${fmtMoney(diff)} สำเร็จ`, 'success');
-      go('finance');
-    } catch (e) { toast('ทำรายการไม่สำเร็จ: ' + e.message, 'error'); }
-  };
+        if (!amount || amount <= 0) return toast('กรุณาใส่จำนวนเงิน', 'error');
+        if (txSaveBtn.disabled) return;
+        txSaveBtn.disabled = true;
 
- try {
-  const txs = await DB.getRecentTransactions(15);
-  const txListEl = root.querySelector('#tx-list');
-  
-  if (txs.length === 0) {
-    txListEl.innerHTML = `<p class="text-sm text-muted text-center py-6">ยังไม่มีรายการ</p>`;
-  } else {
-    txListEl.innerHTML = txs.map(t => `
+        try {
+          if (txType === 'transfer') {
+            const toAccount = root.querySelector('#transfer-to').value;
+            if (selectedAccount === toAccount) {
+              txSaveBtn.disabled = false;
+              return toast('ไม่สามารถโอนเข้าบัญชีเดียวกันได้', 'error');
+            }
+
+            const fromAccName = accounts.find(a => a.id === selectedAccount).name;
+            const toAccName = accounts.find(a => a.id === toAccount).name;
+
+            // หักเงินบัญชีต้นทาง
+            await DB.addTransaction({ account_id: selectedAccount, type: 'expense', category: 'โอนเงินออก', amount, note: `ไปยัง: ${toAccName} ${note ? '(' + note + ')' : ''}` });
+            // นำเงินเข้าบัญชีปลายทาง
+            await DB.addTransaction({ account_id: toAccount, type: 'income', category: 'รับเงินโอน', amount, note: `จาก: ${fromAccName} ${note ? '(' + note + ')' : ''}` });
+
+            toast('โอนเงินสำเร็จ ✓', 'success');
+          } else {
+            const category = root.querySelector('#tx-category').value.trim();
+            if (!category) {
+              txSaveBtn.disabled = false;
+              return toast('กรุณาใส่หมวดหมู่', 'error');
+            }
+            await DB.addTransaction({ account_id: selectedAccount, type: txType, category, amount, note });
+            toast('บันทึกรายการสำเร็จ ✓', 'success');
+          }
+          go('finance');
+        } catch (e) {
+          toast('ทำรายการไม่สำเร็จ: ' + e.message, 'error');
+          txSaveBtn.disabled = false;
+        }
+      };
+
+      root.querySelector('#cash-recon').onclick = async () => {
+        const actual = parseFloat(root.querySelector('#cash-actual').value);
+        if (isNaN(actual)) return toast('กรุณาใส่จำนวนเงินที่นับได้', 'error');
+        const acc = accounts.find(a => a.id === selectedAccount);
+        const diff = actual - acc.balance;
+        if (diff === 0) return toast('ยอดตรงกันอยู่แล้ว ✓', 'success');
+        try {
+          await DB.addTransaction({ account_id: selectedAccount, type: diff > 0 ? 'income' : 'expense', category: 'กระทบยอดเงินสด', amount: Math.abs(diff), note: 'ปรับยอดให้ตรงกับเงินจริง' });
+          toast(`ปรับยอด ${diff > 0 ? '+' : ''}฿${fmtMoney(diff)} สำเร็จ`, 'success');
+          go('finance');
+        } catch (e) { toast('ทำรายการไม่สำเร็จ: ' + e.message, 'error'); }
+      };
+
+      try {
+        const txs = await DB.getRecentTransactions(15);
+        const txListEl = root.querySelector('#tx-list');
+
+       if (txs.length === 0) {
+          txListEl.innerHTML = `<p class="text-sm text-muted text-center py-6">ยังไม่มีรายการ</p>`;
+        } else {
+          txListEl.innerHTML = txs.map(t => `
       <div class="bg-surface border border-hairline rounded-xl px-4 py-3 flex items-center justify-between">
         <div class="min-w-0 flex-1 cursor-pointer" data-tx-edit="${t.id}">
-          <p class="text-sm font-medium">${t.category} ${t.note ? `<span class="text-xs font-normal text-muted">(${t.note})</span>` : ''}</p>
-          <p class="text-xs text-muted">${new Date(t.created_at).toLocaleDateString('th-TH', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' })}</p>
+          <!-- ใช้ escapeHTML ป้องกันหน้าจอพัง -->
+          <p class="text-sm font-medium">${escapeHTML(t.category)} ${t.note ? `<span class="text-xs font-normal text-muted">(${escapeHTML(t.note)})</span>` : ''}</p>
+          <p class="text-xs text-muted">${new Date(t.created_at).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</p>
         </div>
         <div class="flex items-center gap-3">
           <span class="font-display font-semibold tnum ${t.type === 'income' ? 'text-success' : 'text-danger'}">
@@ -896,146 +1283,277 @@ async function renderFinance(root) {
       </div>
     `).join('');
 
-    // ผูก Event สำหรับลบรายการ
-    txListEl.querySelectorAll('[data-tx-del]').forEach(btn => {
-      btn.onclick = async (e) => {
-        e.stopPropagation();
-        if (confirm('คุณต้องการลบรายการนี้ใช่หรือไม่? ยอดเงินในกระเป๋าจะถูกปรับคืนให้อัตโนมัติ')) {
-          try {
-            await DB.deleteTransaction(btn.dataset.txDel);
-            toast('ลบรายการสำเร็จ ✓', 'success');
-            go('finance');
-          } catch (err) {
-            toast('ลบไม่สำเร็จ: ' + err.message, 'error');
-          }
+          // ลบรายการ
+          txListEl.querySelectorAll('[data-tx-del]').forEach(btn => {
+            btn.onclick = async (e) => {
+              e.stopPropagation();
+              if (confirm('คุณต้องการลบรายการนี้ใช่หรือไม่? ยอดเงินในกระเป๋าจะถูกปรับคืนให้อัตโนมัติ')) {
+                try {
+                  await DB.deleteTransaction(btn.dataset.txDel);
+                  toast('ลบรายการสำเร็จ ✓', 'success');
+                  go('finance');
+                } catch (err) {
+                  toast('ลบไม่สำเร็จ: ' + err.message, 'error');
+                }
+              }
+            };
+          });
+
+          // ดึงข้อมูลแก้ไข
+          txListEl.querySelectorAll('[data-tx-edit]').forEach(el => {
+            el.onclick = () => {
+              const t = txs.find(x => x.id === el.dataset.txEdit);
+              if (!t) return;
+
+              root.querySelector(`[data-acc="${t.account_id}"]`)?.click();
+              root.querySelector(`[data-type="${t.type}"]`)?.click();
+              root.querySelector('#tx-amount').value = t.amount;
+              root.querySelector('#tx-category').value = t.category;
+              root.querySelector('#tx-note').value = t.note || '';
+
+              const saveBtn = root.querySelector('#tx-save');
+              saveBtn.textContent = 'บันทึกการแก้ไข';
+              saveBtn.onclick = async () => {
+                const amount = parseFloat(root.querySelector('#tx-amount').value);
+                const category = root.querySelector('#tx-category').value.trim();
+                const note = root.querySelector('#tx-note').value.trim();
+
+                if (!amount || amount <= 0 || !category) return toast('กรอกข้อมูลให้ถูกต้อง', 'error');
+
+                try {
+                  await DB.updateTransaction({
+                    id: t.id,
+                    account_id: selectedAccount,
+                    type: txType,
+                    category,
+                    amount,
+                    note
+                  });
+                  toast('แก้ไขรายการสำเร็จ ✓', 'success');
+                  go('finance');
+                } catch (err) {
+                  toast('แก้ไขไม่สำเร็จ: ' + err.message, 'error');
+                }
+              };
+
+              window.scrollTo({ top: 100, behavior: 'smooth' });
+              toast('ดึงข้อมูลขึ้นมาแก้ไขแล้ว', 'info');
+            };
+          });
         }
-      };
-    });
+      } catch (e) { toast('โหลดรายการไม่สำเร็จ', 'error'); }
+    }
 
-    // ผูก Event สำหรับกดเพื่อดึงข้อมูลกลับขึ้นมาแก้ไข
-    txListEl.querySelectorAll('[data-tx-edit]').forEach(el => {
-      el.onclick = () => {
-        const t = txs.find(x => x.id === el.dataset.txEdit);
-        if (!t) return;
-        
-        // ดึงค่าใส่ฟอร์ม
-        root.querySelector(`[data-acc="${t.account_id}"]`)?.click();
-        root.querySelector(`[data-type="${t.type}"]`)?.click();
-        root.querySelector('#tx-amount').value = t.amount;
-        root.querySelector('#tx-category').value = t.category;
-        root.querySelector('#tx-note').value = t.note || '';
-        
-        // เปลี่ยนปุ่มบันทึกให้เป็นการอัปเดตแทน
-        const saveBtn = root.querySelector('#tx-save');
-        saveBtn.textContent = 'บันทึกการแก้ไข';
-        saveBtn.onclick = async () => {
-          const amount = parseFloat(root.querySelector('#tx-amount').value);
-          const category = root.querySelector('#tx-category').value.trim();
-          const note = root.querySelector('#tx-note').value.trim();
-          
-          if (!amount || amount <= 0 || !category) return toast('กรอกข้อมูลให้ถูกต้อง', 'error');
-          
-          try {
-            await DB.updateTransaction({
-              id: t.id,
-              account_id: selectedAccount,
-              type: txType,
-              category,
-              amount,
-              note
-            });
-            toast('แก้ไขรายการสำเร็จ ✓', 'success');
-            go('finance');
-          } catch (err) {
-            toast('แก้ไขไม่สำเร็จ: ' + err.message, 'error');
-          }
-        };
-        
-        window.scrollTo({ top: 100, behavior: 'smooth' });
-        toast('ดึงข้อมูลขึ้นมาแก้ไขแล้ว', 'info');
-      };
-    });
-  }
-} catch (e) { toast('โหลดรายการไม่สำเร็จ', 'error'); }
-}
-
-/* ============================================================
-   10) INVENTORY & SHELF SETUP
-   ============================================================ */
-function productRowHtml(p) {
-  const hasCost = p.cost_price != null;
-  const profitPerUnit = hasCost ? p.selling_price - p.cost_price : null;
-  return `
+    /* ============================================================
+       10) INVENTORY & SHELF SETUP
+       ============================================================ */
+    function productRowHtml(p) {
+      const hasCost = p.cost_price != null;
+      const profitPerUnit = hasCost ? p.selling_price - p.cost_price : null;
+      return `
   <div class="bg-surface border border-hairline rounded-xl px-4 py-3" data-product-row="${p.id}">
-    <div class="flex items-center justify-between">
+    <div class="flex items-start justify-between items-center gap-2" data-view-row="${p.id}">
       <div class="min-w-0">
         <p class="text-sm font-medium truncate">${p.name}</p>
-        <p class="text-xs text-muted">ขาย ฿${fmtMoney(p.selling_price)} · แจ้งเตือนที่ ≤${p.min_stock_alert}</p>
+        <p class="text-xs text-muted">ขาย ฿${fmtMoney(p.selling_price)} · แจ้งเตือนที่ ≤${p.min_stock_alert}${p.remaining_units != null ? ` · คงเหลือ ${p.remaining_units} ชิ้น` : ''}</p>
         ${hasCost
           ? `<p class="text-xs mt-1"><span class="text-muted">ต้นทุน ฿${fmtMoney(p.cost_price)}/ชิ้น</span> · <span class="font-medium ${profitPerUnit >= 0 ? 'text-primary' : 'text-danger'}">กำไร ฿${fmtMoney(profitPerUnit)}/ชิ้น</span></p>`
           : `<p class="text-xs mt-1 text-accent-dark">ยังไม่ได้ใส่ต้นทุน</p>`}
       </div>
-      <button data-restock-toggle="${p.id}" class="press shrink-0 text-xs font-medium px-3 py-1.5 rounded-full bg-primary-light text-primary whitespace-nowrap">+ เติมต้นทุน</button>
-    </div>
-    <div data-restock-form="${p.id}" class="hidden mt-3 pt-3 border-t border-hairline space-y-2">
-      <div class="flex gap-2">
-        <input data-rc-total="${p.id}" type="number" inputmode="decimal" placeholder="ราคาต้นทุนรวม" class="flex-1 text-sm bg-bg rounded-xl px-3 py-2 outline-none">
-        <input data-rc-qty="${p.id}" type="number" inputmode="numeric" placeholder="จำนวนที่ซื้อ" class="flex-1 text-sm bg-bg rounded-xl px-3 py-2 outline-none">
+      <div class="flex items-center gap-1.5 shrink-0">
+        <button data-restock-toggle="${p.id}" title="เติมต้นทุน" class="press w-9 h-9 rounded-full bg-primary-light text-primary flex items-center justify-center">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        </button>
+        <button data-edit-toggle="${p.id}" title="แก้ไข" class="press w-9 h-9 rounded-full bg-hairline text-ink flex items-center justify-center">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+        </button>
+        <button data-delete-product="${p.id}" title="ลบสินค้า" class="press w-9 h-9 rounded-full bg-danger-light text-danger flex items-center justify-center">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+        </button>
       </div>
+    </div>
+
+    <!-- edit product: name / selling price / min-stock alert -->
+    <div data-edit-form="${p.id}" class="hidden mt-3 pt-3 border-t border-hairline space-y-2">
+      <input data-e-name="${p.id}" value="${p.name}" placeholder="ชื่อสินค้า" class="w-full text-sm bg-bg rounded-xl px-3 py-2 outline-none min-w-0">
+      <div class="flex gap-2">
+        <input data-e-price="${p.id}" type="number" inputmode="decimal" value="${p.selling_price}" placeholder="ราคาขาย" class="flex-1 text-sm bg-bg rounded-xl px-3 py-2 outline-none min-w-0">
+        <input data-e-min="${p.id}" type="number" inputmode="numeric" value="${p.min_stock_alert}" placeholder="แจ้งเตือนที่เหลือ ≤" class="flex-1 text-sm bg-bg rounded-xl px-3 py-2 outline-none min-w-0">
+      </div>
+      <div class="flex gap-2">
+        <button data-e-cancel="${p.id}" class="press flex-1 bg-hairline text-ink text-sm font-medium py-2 rounded-xl">ยกเลิก</button>
+        <button data-e-save="${p.id}" class="press flex-[2] bg-primary text-white text-sm font-medium py-2 rounded-xl">บันทึกการแก้ไข</button>
+      </div>
+    </div>
+
+    <!-- restock: main cost + optional extra cost components (e.g. packaging/box) -->
+    <div data-restock-form="${p.id}" class="hidden mt-3 pt-3 border-t border-hairline space-y-2">
+      <p class="text-xs text-muted">ต้นทุนหลัก (เช่น ราคาสินค้าที่ซื้อมา)</p>
+      <div class="flex gap-2">
+        <input data-rc-total="${p.id}" type="number" inputmode="decimal" placeholder="ราคาต้นทุนรวม" class="flex-1 text-sm bg-bg rounded-xl px-3 py-2 outline-none min-w-0">
+        <input data-rc-qty="${p.id}" type="number" inputmode="numeric" placeholder="จำนวนที่ซื้อ" class="flex-1 text-sm bg-bg rounded-xl px-3 py-2 outline-none min-w-0">
+      </div>
+
+      <div class="flex items-center justify-between pt-1">
+        <p class="text-xs text-muted">ต้นทุนเพิ่มเติม (ไม่บังคับ) เช่น ค่ากล่อง/บรรจุภัณฑ์</p>
+        <button data-rc-extra-add="${p.id}" class="press text-xs font-medium text-primary">+ เพิ่มรายการ</button>
+      </div>
+      <div data-rc-extra-wrap="${p.id}" class="space-y-1.5"></div>
+
       <div data-rc-calc="${p.id}" class="hidden text-xs text-primary bg-primary-light rounded-xl p-2.5 space-y-0.5"></div>
       <button data-rc-save="${p.id}" class="press w-full bg-primary text-white text-sm font-medium py-2 rounded-xl">บันทึกต้นทุนล็อตนี้</button>
     </div>
   </div>`;
-}
+    }
 
-function bindProductRestockForms(body, products) {
-  body.querySelectorAll('[data-restock-toggle]').forEach(btn => {
-    btn.onclick = () => {
-      const id = btn.dataset.restockToggle;
-      body.querySelector(`[data-restock-form="${id}"]`).classList.toggle('hidden');
-    };
-  });
-  products.forEach(p => {
-    const totalInput = body.querySelector(`[data-rc-total="${p.id}"]`);
-    const qtyInput = body.querySelector(`[data-rc-qty="${p.id}"]`);
-    const calcBox = body.querySelector(`[data-rc-calc="${p.id}"]`);
-    function update() {
-      const total = parseFloat(totalInput.value) || 0;
-      const qty = parseInt(qtyInput.value, 10) || 0;
-      if (total > 0 && qty > 0) {
-        const costPerUnit = total / qty;
-        const profitPerUnit = p.selling_price - costPerUnit;
-        const totalProfit = profitPerUnit * qty;
-        calcBox.classList.remove('hidden');
-        calcBox.innerHTML = `
-          <p>ต้นทุนต่อชิ้น: <span class="font-display font-semibold tnum">฿${fmtMoney(costPerUnit)}</span></p>
+    /* Reusable "extra cost" row list — used to add packaging / repack costs
+       (e.g. ซื้อคอนเฟลกมาเป็นห่อ แต่แบ่งขายเป็นกล่อง กล่องเปล่าก็มีต้นทุนของมันเอง)
+       Each row is { label, total, qty } and contributes total/qty baht per unit.
+       Returns a controller with getRows()/getTotalPerUnit() so the caller can
+       fold the extra cost into the final cost_price when saving. */
+    function mountExtraCostList(wrapEl, onChange) {
+      let rows = [];
+      function rowHtml(r, i) {
+        return `
+    <div class="flex gap-1.5 items-center" data-extrarow="${i}">
+      <input data-ex-label="${i}" value="${r.label}" placeholder="เช่น ค่ากล่อง" class="w-20 text-xs bg-surface border border-hairline rounded-lg px-2 py-1.5 outline-none min-w-0">
+      <input data-ex-total="${i}" type="number" inputmode="decimal" value="${r.total || ''}" placeholder="ราคารวม" class="flex-1 text-xs bg-surface border border-hairline rounded-lg px-2 py-1.5 outline-none min-w-0">
+      <input data-ex-qty="${i}" type="number" inputmode="numeric" value="${r.qty || ''}" placeholder="ได้กี่ชิ้น" class="flex-1 text-xs bg-surface border border-hairline rounded-lg px-2 py-1.5 outline-none min-w-0">
+      <button data-ex-del="${i}" class="press w-6 h-6 shrink-0 rounded-full bg-danger-light text-danger flex items-center justify-center text-xs">×</button>
+    </div>`;
+      }
+      function totalPerUnit() {
+        return rows.reduce((s, r) => s + (r.qty > 0 ? (r.total || 0) / r.qty : 0), 0);
+      }
+      function render() {
+        wrapEl.innerHTML = rows.map(rowHtml).join('');
+        rows.forEach((r, i) => {
+          wrapEl.querySelector(`[data-ex-label="${i}"]`).addEventListener('input', e => { rows[i].label = e.target.value; });
+          wrapEl.querySelector(`[data-ex-total="${i}"]`).addEventListener('input', e => { rows[i].total = parseFloat(e.target.value) || 0; onChange(totalPerUnit()); });
+          wrapEl.querySelector(`[data-ex-qty="${i}"]`).addEventListener('input', e => { rows[i].qty = parseInt(e.target.value, 10) || 0; onChange(totalPerUnit()); });
+          wrapEl.querySelector(`[data-ex-del="${i}"]`).addEventListener('click', () => { rows.splice(i, 1); render(); onChange(totalPerUnit()); });
+        });
+        onChange(totalPerUnit());
+      }
+      render();
+      return {
+        addRow() { rows.push({ label: '', total: 0, qty: 0 }); render(); },
+        getTotalPerUnit: totalPerUnit,
+      };
+    }
+
+    function bindProductRestockForms(body, products) {
+      // toggle restock form
+      body.querySelectorAll('[data-restock-toggle]').forEach(btn => {
+        btn.onclick = () => {
+          const id = btn.dataset.restockToggle;
+          body.querySelector(`[data-edit-form="${id}"]`)?.classList.add('hidden');
+          body.querySelector(`[data-restock-form="${id}"]`).classList.toggle('hidden');
+        };
+      });
+
+      // delete product (with confirm) — if it's still assigned to shelves or has stock
+      // batches, Supabase's FK constraints will reject the delete; surface that clearly
+      // instead of a raw error, since "ลบไม่ได้เพราะมีของผูกอยู่" is the likely cause.
+      body.querySelectorAll('[data-delete-product]').forEach(btn => {
+        btn.onclick = async () => {
+          const p = products.find(x => x.id === btn.dataset.deleteProduct);
+          if (!confirm(`ลบ "${p?.name || 'สินค้านี้'}" ใช่หรือไม่? ประวัติต้นทุนและการจัดวางที่ผูกกับสินค้านี้อาจได้รับผลกระทบ`)) return;
+          if (btn.disabled) return;
+          btn.disabled = true;
+          try {
+            await DB.deleteProduct(btn.dataset.deleteProduct);
+            toast('ลบสินค้าสำเร็จ ✓', 'success');
+            go('inventory', { tab: 'products' });
+          } catch (e) {
+            toast('ลบไม่สำเร็จ — สินค้านี้อาจถูกใช้งานอยู่ (วางบนชั้น/มีต้นทุนผูกอยู่): ' + e.message, 'error');
+            btn.disabled = false;
+          }
+        };
+      });
+
+      // toggle + wire up product edit form (name / selling price / min stock alert)
+      body.querySelectorAll('[data-edit-toggle]').forEach(btn => {
+        btn.onclick = () => {
+          const id = btn.dataset.editToggle;
+          body.querySelector(`[data-restock-form="${id}"]`)?.classList.add('hidden');
+          body.querySelector(`[data-edit-form="${id}"]`).classList.toggle('hidden');
+        };
+      });
+      products.forEach(p => {
+        const cancelBtn = body.querySelector(`[data-e-cancel="${p.id}"]`);
+        const saveBtn = body.querySelector(`[data-e-save="${p.id}"]`);
+        if (cancelBtn) cancelBtn.onclick = () => body.querySelector(`[data-edit-form="${p.id}"]`).classList.add('hidden');
+        if (saveBtn) saveBtn.onclick = async () => {
+          const name = body.querySelector(`[data-e-name="${p.id}"]`).value.trim();
+          const price = parseFloat(body.querySelector(`[data-e-price="${p.id}"]`).value);
+          const min = parseInt(body.querySelector(`[data-e-min="${p.id}"]`).value, 10);
+          if (!name || !price) return toast('กรอกชื่อและราคาขายให้ครบ', 'error');
+          if (saveBtn.disabled) return;
+          saveBtn.disabled = true;
+          try {
+            await DB.updateProduct(p.id, { name, selling_price: price, min_stock_alert: min || 5 });
+            toast('แก้ไขสินค้าสำเร็จ ✓', 'success');
+            go('inventory', { tab: 'products' });
+          } catch (e) {
+            toast('แก้ไขไม่สำเร็จ: ' + e.message, 'error');
+            saveBtn.disabled = false;
+          }
+        };
+      });
+
+      // restock form: main cost + extra cost components (packaging etc.) folded into one cost_price
+      products.forEach(p => {
+        const totalInput = body.querySelector(`[data-rc-total="${p.id}"]`);
+        const qtyInput = body.querySelector(`[data-rc-qty="${p.id}"]`);
+        const calcBox = body.querySelector(`[data-rc-calc="${p.id}"]`);
+        const extraWrap = body.querySelector(`[data-rc-extra-wrap="${p.id}"]`);
+        const extraAddBtn = body.querySelector(`[data-rc-extra-add="${p.id}"]`);
+        let extraPerUnit = 0;
+
+        const extraList = mountExtraCostList(extraWrap, (perUnit) => { extraPerUnit = perUnit; update(); });
+        extraAddBtn.onclick = () => extraList.addRow();
+
+        function update() {
+          const total = parseFloat(totalInput.value) || 0;
+          const qty = parseInt(qtyInput.value, 10) || 0;
+          if (total > 0 && qty > 0) {
+            const mainCostPerUnit = total / qty;
+            const costPerUnit = mainCostPerUnit + extraPerUnit;
+            const profitPerUnit = p.selling_price - costPerUnit;
+            const totalProfit = profitPerUnit * qty;
+            calcBox.classList.remove('hidden');
+            calcBox.innerHTML = `
+          ${extraPerUnit > 0 ? `<p>ต้นทุนหลัก: <span class="font-display font-semibold tnum">฿${fmtMoney(mainCostPerUnit)}</span>/ชิ้น + เพิ่มเติม <span class="font-display font-semibold tnum">฿${fmtMoney(extraPerUnit)}</span>/ชิ้น</p>` : ''}
+          <p>ต้นทุนรวมต่อชิ้น: <span class="font-display font-semibold tnum">฿${fmtMoney(costPerUnit)}</span></p>
           <p>กำไรต่อชิ้น: <span class="font-display font-semibold tnum ${profitPerUnit >= 0 ? '' : 'text-danger'}">฿${fmtMoney(profitPerUnit)}</span></p>
           <p>กำไรรวมล็อตนี้ (${qty} ชิ้น): <span class="font-display font-semibold tnum ${totalProfit >= 0 ? '' : 'text-danger'}">฿${fmtMoney(totalProfit)}</span></p>
         `;
-      } else {
-        calcBox.classList.add('hidden');
-      }
+          } else {
+            calcBox.classList.add('hidden');
+          }
+        }
+        totalInput.addEventListener('input', update);
+        qtyInput.addEventListener('input', update);
+        body.querySelector(`[data-rc-save="${p.id}"]`).onclick = async () => {
+          const total = parseFloat(totalInput.value);
+          const qty = parseInt(qtyInput.value, 10);
+          if (!total || !qty) return toast('กรอกราคาต้นทุนรวมและจำนวนให้ครบ', 'error');
+          const costPerUnit = (total / qty) + extraList.getTotalPerUnit();
+          await DB.addStockBatch(p.id, costPerUnit, qty);
+          toast('บันทึกต้นทุนล็อตใหม่สำเร็จ ✓', 'success');
+          go('inventory', { tab: 'products' });
+        };
+      });
     }
-    totalInput.addEventListener('input', update);
-    qtyInput.addEventListener('input', update);
-    body.querySelector(`[data-rc-save="${p.id}"]`).onclick = async () => {
-      const total = parseFloat(totalInput.value);
-      const qty = parseInt(qtyInput.value, 10);
-      if (!total || !qty) return toast('กรอกราคาต้นทุนรวมและจำนวนให้ครบ', 'error');
-      await DB.addStockBatch(p.id, total / qty, qty);
-      toast('บันทึกต้นทุนล็อตใหม่สำเร็จ ✓', 'success');
-      go('inventory', { tab: 'products' });
-    };
-  });
-}
 
-async function renderInventory(root, state) {
-  const tab = state.tab || 'buildings';
-  root.innerHTML = `
+    async function renderInventory(root, state) {
+      const tab = state.tab || 'buildings';
+      root.innerHTML = `
     <h1 class="font-display text-2xl font-semibold mb-4">จัดการข้อมูล</h1>
     <div class="flex gap-2 mb-4 overflow-x-auto" id="inv-tabs">
-      ${[['buildings','ตึก/ชั้น'],['products','สินค้า'],['assign','จัดวางสินค้า']].map(([k,l]) => `
-        <button data-tab="${k}" class="press whitespace-nowrap text-sm font-medium px-4 py-2 rounded-full ${tab===k?'bg-primary text-white':'bg-surface border border-hairline text-muted'}">${l}</button>`).join('')}
+      ${[['buildings', 'ตึก/ชั้น'], ['products', 'สินค้า'], ['assign', 'นำเข้าชั้น'], ['transfer', 'ย้ายสินค้า']].map(([k, l]) => `
+        <button data-tab="${k}" class="press whitespace-nowrap text-sm font-medium px-4 py-2 rounded-full ${tab === k ? 'bg-primary text-white' : 'bg-surface border border-hairline text-muted'}">${l}</button>`).join('')}
       <button data-calc-tab class="press whitespace-nowrap text-sm font-medium px-4 py-2 rounded-full bg-surface border border-dashed border-primary text-primary flex items-center gap-1">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8M8 10h.01M12 10h.01M16 10h.01"/></svg>
         คำนวณ
@@ -1043,19 +1561,19 @@ async function renderInventory(root, state) {
     </div>
     <div id="inv-body">${skeleton('h-24')}</div>
   `;
-  root.querySelectorAll('#inv-tabs button[data-tab]').forEach(b => b.onclick = () => go('inventory', { tab: b.dataset.tab }));
-  root.querySelector('[data-calc-tab]').onclick = () => go('calculator', { from: 'inventory' });
+      root.querySelectorAll('#inv-tabs button[data-tab]').forEach(b => b.onclick = () => go('inventory', { tab: b.dataset.tab }));
+      root.querySelector('[data-calc-tab]').onclick = () => go('calculator', { from: 'inventory' });
 
-  const body = root.querySelector('#inv-body');
+      const body = root.querySelector('#inv-body');
 
-  if (tab === 'buildings') {
-    const buildings = await DB.getBuildings();
-    // Was: sequential `for...of` + `await`, firing one request per building
-    // one at a time (N+1 round trips). Fetch all shelves concurrently instead.
-    const shelvesByB = {};
-    const shelvesList = await Promise.all(buildings.map(b => DB.getShelves(b.id)));
-    buildings.forEach((b, i) => { shelvesByB[b.id] = shelvesList[i]; });
-    body.innerHTML = `
+      if (tab === 'buildings') {
+        const buildings = await DB.getBuildings();
+        // Was: sequential `for...of` + `await`, firing one request per building
+        // one at a time (N+1 round trips). Fetch all shelves concurrently instead.
+        const shelvesByB = {};
+        const shelvesList = await Promise.all(buildings.map(b => DB.getShelves(b.id)));
+        buildings.forEach((b, i) => { shelvesByB[b.id] = shelvesList[i]; });
+        body.innerHTML = `
       <div class="bg-surface border border-hairline rounded-2xl p-4 mb-4">
         <p class="font-display font-medium text-sm mb-2">เพิ่มตึกใหม่</p>
         <div class="flex gap-2">
@@ -1080,51 +1598,58 @@ async function renderInventory(root, state) {
           </div>`).join('')}
       </div>
     `;
-    const addBuildingBtn = body.querySelector('#add-building');
-    addBuildingBtn.onclick = async () => {
-      const val = body.querySelector('#new-building').value.trim();
-      if (!val || addBuildingBtn.disabled) return;
-      addBuildingBtn.disabled = true;
-      try {
-        await DB.addBuilding(val);
-        toast('เพิ่มตึกสำเร็จ ✓', 'success');
-        go('inventory', { tab: 'buildings' });
-      } catch (e) {
-        toast('เพิ่มตึกไม่สำเร็จ: ' + e.message, 'error');
-        addBuildingBtn.disabled = false;
+        const addBuildingBtn = body.querySelector('#add-building');
+        addBuildingBtn.onclick = async () => {
+          const val = body.querySelector('#new-building').value.trim();
+          if (!val || addBuildingBtn.disabled) return;
+          addBuildingBtn.disabled = true;
+          try {
+            await DB.addBuilding(val);
+            toast('เพิ่มตึกสำเร็จ ✓', 'success');
+            go('inventory', { tab: 'buildings' });
+          } catch (e) {
+            toast('เพิ่มตึกไม่สำเร็จ: ' + e.message, 'error');
+            addBuildingBtn.disabled = false;
+          }
+        };
+        body.querySelectorAll('[data-addfloor]').forEach(btn => btn.onclick = async () => {
+          const input = body.querySelector(`[data-newfloor="${btn.dataset.addfloor}"]`);
+          const floor = parseInt(input.value, 10);
+          if (!floor) return toast('ใส่เลขชั้น', 'error');
+          if (btn.disabled) return;
+          btn.disabled = true;
+          try {
+            await DB.addShelf(btn.dataset.addfloor, floor);
+            toast('เพิ่มชั้นสำเร็จ ✓', 'success');
+            go('inventory', { tab: 'buildings' });
+          } catch (e) {
+            toast('เพิ่มชั้นไม่สำเร็จ: ' + e.message, 'error');
+            btn.disabled = false;
+          }
+        });
       }
-    };
-    body.querySelectorAll('[data-addfloor]').forEach(btn => btn.onclick = async () => {
-      const input = body.querySelector(`[data-newfloor="${btn.dataset.addfloor}"]`);
-      const floor = parseInt(input.value, 10);
-      if (!floor) return toast('ใส่เลขชั้น', 'error');
-      if (btn.disabled) return;
-      btn.disabled = true;
-      try {
-        await DB.addShelf(btn.dataset.addfloor, floor);
-        toast('เพิ่มชั้นสำเร็จ ✓', 'success');
-        go('inventory', { tab: 'buildings' });
-      } catch (e) {
-        toast('เพิ่มชั้นไม่สำเร็จ: ' + e.message, 'error');
-        btn.disabled = false;
-      }
-    });
-  }
 
-  if (tab === 'products') {
-    const products = await DB.getProductsWithCost();
-    body.innerHTML = `
+      if (tab === 'products') {
+        const products = await DB.getProductsWithCost();
+        body.innerHTML = `
       <div class="bg-surface border border-hairline rounded-2xl p-4 mb-4 space-y-2">
         <p class="font-display font-medium text-sm mb-1">เพิ่มสินค้าใหม่</p>
         <input id="p-name" placeholder="ชื่อสินค้า เช่น ทิชชู่" class="w-full text-sm bg-bg rounded-xl px-3 py-2.5 outline-none">
         <input id="p-price" type="number" inputmode="decimal" placeholder="ราคาขาย (ต่อชิ้น)" class="w-full text-sm bg-bg rounded-xl px-3 py-2.5 outline-none">
         <p class="text-xs text-muted pt-1">ต้นทุนที่ซื้อมา (ไม่บังคับ แต่ช่วยคำนวณกำไรให้อัตโนมัติ)</p>
         <div class="flex gap-2">
-          <input id="p-cost-total" type="number" inputmode="decimal" placeholder="ราคาต้นทุนรวม เช่น 164" class="flex-1 text-sm bg-bg rounded-xl px-3 py-2.5 outline-none">
-          <input id="p-cost-qty" type="number" inputmode="numeric" placeholder="จำนวนที่ซื้อ เช่น 20" class="flex-1 text-sm bg-bg rounded-xl px-3 py-2.5 outline-none">
+          <input id="p-cost-total" type="number" inputmode="decimal" placeholder="ราคาต้นทุนรวม เช่น 164" class="flex-1 text-sm bg-bg rounded-xl px-3 py-2.5 outline-none min-w-0">
+          <input id="p-cost-qty" type="number" inputmode="numeric" placeholder="จำนวนที่ซื้อ เช่น 20" class="flex-1 text-sm bg-bg rounded-xl px-3 py-2.5 outline-none min-w-0">
         </div>
+
+        <div class="flex items-center justify-between pt-1">
+          <p class="text-xs text-muted">ต้นทุนเพิ่มเติม (ไม่บังคับ) เช่น ค่ากล่อง/บรรจุภัณฑ์</p>
+          <button id="p-extra-add" class="press text-xs font-medium text-primary">+ เพิ่มรายการ</button>
+        </div>
+        <div id="p-extra-wrap" class="space-y-1.5"></div>
+
         <div id="p-calc" class="hidden bg-primary-light rounded-xl p-3 text-sm text-primary space-y-0.5"></div>
-        <input id="p-min" type="number" placeholder="แจ้งเตือนเมื่อเหลือ ≤ (ค่าเริ่มต้น 5)" class="w-full text-sm bg-bg rounded-xl px-3 py-2.5 outline-none">
+        <input id="p-min" type="number" placeholder="แจ้งเตือนเมื่อเหลือ ≤ (ค่าเริ่มต้น 5)" class="w-full text-sm bg-bg rounded-xl px-3 py-2.5 outline-none min-w-0">
         <button id="add-product" class="press w-full bg-primary text-white py-2.5 rounded-xl font-medium text-sm">เพิ่มสินค้า</button>
       </div>
       <div class="space-y-2" id="product-list">
@@ -1132,56 +1657,62 @@ async function renderInventory(root, state) {
       </div>
     `;
 
-    function readCalc() {
-      const price = parseFloat(body.querySelector('#p-price').value) || 0;
-      const costTotal = parseFloat(body.querySelector('#p-cost-total').value) || 0;
-      const qty = parseInt(body.querySelector('#p-cost-qty').value, 10) || 0;
-      const calcBox = body.querySelector('#p-calc');
-      if (costTotal > 0 && qty > 0) {
-        const costPerUnit = costTotal / qty;
-        const profitPerUnit = price - costPerUnit;
-        const totalProfit = profitPerUnit * qty;
-        calcBox.classList.remove('hidden');
-        calcBox.innerHTML = `
-          <p>ต้นทุนต่อชิ้น: <span class="font-display font-semibold tnum">฿${fmtMoney(costPerUnit)}</span></p>
+        let pExtraPerUnit = 0;
+        const pExtraList = mountExtraCostList(body.querySelector('#p-extra-wrap'), (perUnit) => { pExtraPerUnit = perUnit; readCalc(); });
+        body.querySelector('#p-extra-add').onclick = () => pExtraList.addRow();
+
+        function readCalc() {
+          const price = parseFloat(body.querySelector('#p-price').value) || 0;
+          const costTotal = parseFloat(body.querySelector('#p-cost-total').value) || 0;
+          const qty = parseInt(body.querySelector('#p-cost-qty').value, 10) || 0;
+          const calcBox = body.querySelector('#p-calc');
+          if (costTotal > 0 && qty > 0) {
+            const mainCostPerUnit = costTotal / qty;
+            const costPerUnit = mainCostPerUnit + pExtraPerUnit;
+            const profitPerUnit = price - costPerUnit;
+            const totalProfit = profitPerUnit * qty;
+            calcBox.classList.remove('hidden');
+            calcBox.innerHTML = `
+          ${pExtraPerUnit > 0 ? `<p>ต้นทุนหลัก: <span class="font-display font-semibold tnum">฿${fmtMoney(mainCostPerUnit)}</span>/ชิ้น + เพิ่มเติม <span class="font-display font-semibold tnum">฿${fmtMoney(pExtraPerUnit)}</span>/ชิ้น</p>` : ''}
+          <p>ต้นทุนรวมต่อชิ้น: <span class="font-display font-semibold tnum">฿${fmtMoney(costPerUnit)}</span></p>
           <p>กำไรต่อชิ้น: <span class="font-display font-semibold tnum ${profitPerUnit >= 0 ? 'text-primary' : 'text-danger'}">฿${fmtMoney(profitPerUnit)}</span></p>
           <p>กำไรรวมทั้งล็อต (${qty} ชิ้น): <span class="font-display font-semibold tnum ${totalProfit >= 0 ? 'text-primary' : 'text-danger'}">฿${fmtMoney(totalProfit)}</span></p>
         `;
-      } else {
-        calcBox.classList.add('hidden');
-      }
-    }
-    ['#p-price', '#p-cost-total', '#p-cost-qty'].forEach(sel => body.querySelector(sel).addEventListener('input', readCalc));
-
-    const addProductBtn = body.querySelector('#add-product');
-    addProductBtn.onclick = async () => {
-      const name = body.querySelector('#p-name').value.trim();
-      const price = parseFloat(body.querySelector('#p-price').value);
-      const min = parseInt(body.querySelector('#p-min').value, 10) || 5;
-      const costTotal = parseFloat(body.querySelector('#p-cost-total').value) || 0;
-      const qty = parseInt(body.querySelector('#p-cost-qty').value, 10) || 0;
-      if (!name || !price) return toast('กรอกชื่อและราคาขายให้ครบ', 'error');
-      if (addProductBtn.disabled) return; // guard against double-tap creating a duplicate product
-      addProductBtn.disabled = true;
-      try {
-        const product = await DB.addProduct({ name, selling_price: price, min_stock_alert: min, image_url: null });
-        if (costTotal > 0 && qty > 0) {
-          await DB.addStockBatch(product.id, costTotal / qty, qty);
+          } else {
+            calcBox.classList.add('hidden');
+          }
         }
-        toast('เพิ่มสินค้าสำเร็จ ✓', 'success');
-        go('inventory', { tab: 'products' });
-      } catch (e) {
-        toast('เพิ่มสินค้าไม่สำเร็จ: ' + e.message, 'error');
-        addProductBtn.disabled = false;
+        ['#p-price', '#p-cost-total', '#p-cost-qty'].forEach(sel => body.querySelector(sel).addEventListener('input', readCalc));
+
+        const addProductBtn = body.querySelector('#add-product');
+        addProductBtn.onclick = async () => {
+          const name = body.querySelector('#p-name').value.trim();
+          const price = parseFloat(body.querySelector('#p-price').value);
+          const min = parseInt(body.querySelector('#p-min').value, 10) || 5;
+          const costTotal = parseFloat(body.querySelector('#p-cost-total').value) || 0;
+          const qty = parseInt(body.querySelector('#p-cost-qty').value, 10) || 0;
+          if (!name || !price) return toast('กรอกชื่อและราคาขายให้ครบ', 'error');
+          if (addProductBtn.disabled) return; // guard against double-tap creating a duplicate product
+          addProductBtn.disabled = true;
+          try {
+            const product = await DB.addProduct({ name, selling_price: price, min_stock_alert: min, image_url: null });
+            if (costTotal > 0 && qty > 0) {
+              await DB.addStockBatch(product.id, (costTotal / qty) + pExtraList.getTotalPerUnit(), qty);
+            }
+            toast('เพิ่มสินค้าสำเร็จ ✓', 'success');
+            go('inventory', { tab: 'products' });
+          } catch (e) {
+            toast('เพิ่มสินค้าไม่สำเร็จ: ' + e.message, 'error');
+            addProductBtn.disabled = false;
+          }
+        };
+
+        bindProductRestockForms(body, products);
       }
-    };
 
-    bindProductRestockForms(body, products);
-  }
-
-  if (tab === 'assign') {
-    const [buildings, products] = await Promise.all([DB.getBuildings(), DB.getProducts()]);
-    body.innerHTML = `
+      if (tab === 'assign') {
+        const [buildings, products] = await Promise.all([DB.getBuildings(), DB.getProducts()]);
+        body.innerHTML = `
       <div class="bg-surface border border-hairline rounded-2xl p-4 space-y-3">
         <p class="font-display font-medium text-sm">จัดวางสินค้าเข้าชั้น</p>
         <select id="a-building" class="w-full text-sm bg-bg rounded-xl px-3 py-2.5 outline-none">
@@ -1195,252 +1726,638 @@ async function renderInventory(root, state) {
         <button id="a-save" class="press w-full bg-primary text-white py-2.5 rounded-xl font-medium text-sm">บันทึกการจัดวาง</button>
       </div>
     `;
-    async function loadShelves() {
-      const shelves = await DB.getShelves(body.querySelector('#a-building').value);
-      body.querySelector('#a-shelf').innerHTML = shelves.map(s => `<option value="${s.id}">ชั้น ${s.floor}</option>`).join('') || '<option disabled>ไม่มีชั้น</option>';
+        async function loadShelves() {
+          const shelves = await DB.getShelves(body.querySelector('#a-building').value);
+          body.querySelector('#a-shelf').innerHTML = shelves.map(s => `<option value="${s.id}">ชั้น ${s.floor}</option>`).join('') || '<option disabled>ไม่มีชั้น</option>';
+        }
+        body.querySelector('#a-building').onchange = loadShelves;
+        await loadShelves();
+        body.querySelector('#a-save').onclick = async () => {
+          const shelfId = body.querySelector('#a-shelf').value;
+          const productId = body.querySelector('#a-product').value;
+          const qty = parseInt(body.querySelector('#a-qty').value, 10) || 0;
+          if (!shelfId) return toast('ไม่มีชั้นให้เลือก', 'error');
+          await DB.assignProductToShelf(shelfId, productId, qty);
+          toast('จัดวางสินค้าสำเร็จ ✓', 'success');
+        };
+      }
+
+      if (tab === 'transfer') {
+        const [buildings, products] = await Promise.all([DB.getBuildings(), DB.getProducts()]);
+        body.innerHTML = `
+      <div class="bg-surface border border-hairline rounded-2xl p-4 space-y-3">
+        <p class="font-display font-medium text-sm text-primary flex items-center gap-2">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+          ย้ายจาก... (ต้นทาง)
+        </p>
+        <select id="t-src-building" class="w-full text-sm bg-bg rounded-xl px-3 py-2.5 outline-none">
+          <option value="" disabled selected>เลือกตึกต้นทาง</option>
+          ${buildings.map(b => `<option value="${b.id}">${b.name}</option>`).join('')}
+        </select>
+        <select id="t-src-shelf" class="w-full text-sm bg-bg rounded-xl px-3 py-2.5 outline-none disabled:opacity-50" disabled><option>เลือกชั้นต้นทาง</option></select>
+        <select id="t-product" class="w-full text-sm bg-bg rounded-xl px-3 py-2.5 outline-none disabled:opacity-50" disabled><option>เลือกสินค้าที่จะย้าย</option></select>
+        
+        <div class="border-t border-hairline my-4 pt-3">
+          <p class="font-display font-medium text-sm text-accent flex items-center gap-2 mb-3">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 16 12 20 8 16"/><line x1="12" y1="22" x2="12" y2="9"/></svg>
+            ไปที่... (ปลายทาง)
+          </p>
+          <select id="t-dest-building" class="w-full text-sm bg-bg rounded-xl px-3 py-2.5 pt-3 mb-3 outline-none">
+            <option value="" disabled selected>เลือกตึกปลายทาง</option>
+            ${buildings.map(b => `<option value="${b.id}">${b.name}</option>`).join('')}
+          </select>
+          <select id="t-dest-shelf" class="w-full text-sm bg-bg rounded-xl px-3 py-2.5 outline-none disabled:opacity-50" disabled><option>เลือกชั้นปลายทาง</option></select>
+        </div>
+
+        <input id="t-qty" type="number" placeholder="จำนวนที่ต้องการย้าย" class="w-full text-sm bg-bg rounded-xl px-3 py-2.5 outline-none">
+        <button id="t-save" class="press w-full bg-ink text-white py-2.5 rounded-xl font-medium text-sm">ยืนยันการย้าย</button>
+      </div>
+    `;
+
+        // ผูก Logic การเปลี่ยนค่า Select (Cascading Dropdowns)
+        body.querySelector('#t-src-building').onchange = async (e) => {
+          const shelves = await DB.getShelves(e.target.value);
+          const shelfSelect = body.querySelector('#t-src-shelf');
+          shelfSelect.innerHTML = '<option value="" disabled selected>เลือกชั้นต้นทาง</option>' + shelves.map(s => `<option value="${s.id}">ชั้น ${s.floor}</option>`).join('');
+          shelfSelect.disabled = false;
+        };
+        body.querySelector('#t-src-shelf').onchange = async (e) => {
+          const items = await DB.getShelfItems(e.target.value);
+          const prodSelect = body.querySelector('#t-product');
+          prodSelect.innerHTML = '<option value="" disabled selected>เลือกสินค้าที่จะย้าย</option>' + items.map(it => `<option value="${it.product.id}">${it.product.name} (มี ${it.quantity} ชิ้น)</option>`).join('');
+          prodSelect.disabled = false;
+        };
+        body.querySelector('#t-dest-building').onchange = async (e) => {
+          const shelves = await DB.getShelves(e.target.value);
+          const shelfSelect = body.querySelector('#t-dest-shelf');
+          shelfSelect.innerHTML = '<option value="" disabled selected>เลือกชั้นปลายทาง</option>' + shelves.map(s => `<option value="${s.id}">ชั้น ${s.floor}</option>`).join('');
+          shelfSelect.disabled = false;
+        };
+
+        body.querySelector('#t-save').onclick = async () => {
+          const srcShelf = body.querySelector('#t-src-shelf').value;
+          const destShelf = body.querySelector('#t-dest-shelf').value;
+          const productId = body.querySelector('#t-product').value;
+          const qty = parseInt(body.querySelector('#t-qty').value, 10);
+
+          if (!srcShelf || !destShelf || !productId || !qty) return toast('กรุณากรอกข้อมูลให้ครบ', 'error');
+          if (srcShelf === destShelf) return toast('ต้นทางและปลายทางต้องไม่ซ้ำกัน', 'error');
+
+          try {
+            await DB.transferStock({ source_shelf_id: srcShelf, dest_shelf_id: destShelf, product_id: productId, qty });
+            toast('ย้ายสินค้าสำเร็จ ✓', 'success');
+            go('inventory', { tab: 'transfer' });
+          } catch (e) { toast('ย้ายไม่สำเร็จ: ' + e.message, 'error'); }
+        };
+      }
     }
-    body.querySelector('#a-building').onchange = loadShelves;
-    await loadShelves();
-    body.querySelector('#a-save').onclick = async () => {
-      const shelfId = body.querySelector('#a-shelf').value;
-      const productId = body.querySelector('#a-product').value;
-      const qty = parseInt(body.querySelector('#a-qty').value, 10) || 0;
-      if (!shelfId) return toast('ไม่มีชั้นให้เลือก', 'error');
-      await DB.assignProductToShelf(shelfId, productId, qty);
-      toast('จัดวางสินค้าสำเร็จ ✓', 'success');
-    };
-  }
-}
-
 /* ============================================================
-   11) STANDALONE COST / PROFIT CALCULATOR
-   คำนวณเฉยๆ ระหว่างซื้อของ ไม่บันทึกเข้าระบบ / ไม่แตะ DB
-   รายการเปรียบเทียบเก็บไว้ใน localStorage เท่านั้น (แยกจากสินค้าในระบบ)
-   ============================================================ */
-const CALC_SCRATCH_KEY = 'cost_calc_scratch';
-function loadCalcScratch() { try { return JSON.parse(localStorage.getItem(CALC_SCRATCH_KEY)) || []; } catch { return []; } }
-function saveCalcScratch(list) { localStorage.setItem(CALC_SCRATCH_KEY, JSON.stringify(list)); }
+       11) STANDALONE COST / PROFIT CALCULATOR (อัปเกรดแบบ Pro)
+       ============================================================ */
+    const CALC_SCRATCH_KEY = 'cost_calc_scratch';
+    function loadCalcScratch() { try { return JSON.parse(localStorage.getItem(CALC_SCRATCH_KEY)) || []; } catch { return []; } }
+    function saveCalcScratch(list) { localStorage.setItem(CALC_SCRATCH_KEY, JSON.stringify(list)); }
 
-function renderCalculator(root, state) {
-  let scratch = loadCalcScratch();
+    // ฟังก์ชันช่วยคำนวณสมการคณิตศาสตร์จาก String (เช่น "150+30")
+    function parseMath(str) {
+      if (!str) return 0;
+      try {
+        // ลบตัวอักษรที่ไม่เกี่ยวกับการคำนวณออก ป้องกัน Error
+        const clean = str.replace(/[^0-9+\-*/.()]/g, '');
+        if (!clean) return 0;
+        const result = Function(`'use strict'; return (${clean})`)();
+        return isFinite(result) ? result : 0;
+      } catch {
+        return 0; // คืนค่า 0 หากผู้ใช้ยังพิมพ์สมการไม่เสร็จ เช่น "150+"
+      }
+    }
 
-  root.innerHTML = `
+    function renderCalculator(root, state) {
+      let scratch = loadCalcScratch();
+
+      root.innerHTML = `
     <button id="calc-back" class="press text-sm text-muted flex items-center gap-1 mb-3">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg> กลับ
     </button>
-    <h1 class="font-display text-2xl font-semibold mb-1">คำนวณต้นทุน-กำไร</h1>
-    <p class="text-muted text-sm mb-4">คำนวณเฉยๆ ตอนซื้อของ ไม่บันทึกเข้าระบบ</p>
+    <h1 class="font-display text-2xl font-semibold mb-1">ผู้ช่วยคำนวณต้นทุน</h1>
+    <p class="text-muted text-sm mb-4">พิมพ์สมการ (เช่น 150+30) ในช่องตัวเลขได้เลย</p>
 
-    <div class="bg-surface border border-hairline rounded-2xl p-4 mb-4 space-y-3">
+    <div class="bg-surface border border-hairline rounded-2xl p-4 mb-4 space-y-3 shadow-sm">
       <input id="c-name" placeholder="ชื่อสินค้า (ไม่บังคับ) เช่น ทิชชู่" class="w-full text-sm bg-bg rounded-xl px-3 py-2.5 outline-none">
+      
       <div>
-        <label class="text-xs text-muted mb-1 block">ราคาขายต่อชิ้น</label>
-        <input id="c-price" type="number" inputmode="decimal" placeholder="เช่น 25" class="w-full font-display text-xl font-semibold tnum bg-bg rounded-xl px-3 py-2.5 outline-none">
+        <label class="text-xs text-primary font-medium mb-1 block">ราคาขายต่อชิ้น</label>
+        <input id="c-price" type="text" placeholder="เช่น 25" class="w-full font-display text-xl font-semibold tnum bg-bg rounded-xl px-3 py-2.5 outline-none focus:ring-2 focus:ring-primary/30">
       </div>
-      <div class="flex gap-2">
-        <div class="flex-1">
-          <label class="text-xs text-muted mb-1 block">ราคาต้นทุนรวม</label>
-          <input id="c-cost-total" type="number" inputmode="decimal" placeholder="เช่น 164" class="w-full text-sm bg-bg rounded-xl px-3 py-2.5 outline-none">
+      
+      <div class="grid grid-cols-2 gap-3 pt-2 border-t border-hairline">
+        <div>
+          <label class="text-xs text-muted mb-1 block">ต้นทุนสินค้ารวม</label>
+          <input id="c-cost-total" type="text" placeholder="เช่น 500" class="w-full text-sm bg-bg rounded-xl px-3 py-2.5 outline-none focus:ring-2 focus:ring-primary/30">
         </div>
-        <div class="flex-1">
+        <div>
+          <label class="text-xs text-muted mb-1 block">ค่าส่ง/ค่าแพ็ค (+)</label>
+          <input id="c-misc-cost" type="text" placeholder="เช่น 45" class="w-full text-sm bg-bg rounded-xl px-3 py-2.5 outline-none focus:ring-2 focus:ring-primary/30">
+        </div>
+        <div>
           <label class="text-xs text-muted mb-1 block">จำนวนที่ซื้อ</label>
-          <input id="c-qty" type="number" inputmode="numeric" placeholder="เช่น 20" class="w-full text-sm bg-bg rounded-xl px-3 py-2.5 outline-none">
+          <input id="c-qty" type="text" placeholder="เช่น 20" class="w-full text-sm bg-bg rounded-xl px-3 py-2.5 outline-none focus:ring-2 focus:ring-primary/30">
+        </div>
+        <div>
+          <label class="text-xs text-muted mb-1 block">จำนวนของแถม (+)</label>
+          <input id="c-free-qty" type="text" placeholder="เช่น 2" class="w-full text-sm bg-bg rounded-xl px-3 py-2.5 outline-none focus:ring-2 focus:ring-primary/30">
         </div>
       </div>
 
-      <div id="c-result" class="hidden bg-primary-light rounded-2xl p-4 space-y-2 pop-in">
-        <div class="grid grid-cols-2 gap-3">
+      <div id="c-result" class="hidden bg-primary-light rounded-2xl p-4 space-y-3 pop-in mt-2 border border-primary/20">
+        <div class="flex items-center justify-between border-b border-primary/10 pb-2">
           <div>
-            <p class="text-xs text-primary/70">ต้นทุนต่อชิ้น</p>
-            <p class="font-display font-semibold text-lg tnum text-primary" id="r-cost-unit">-</p>
+            <p class="text-xs text-primary/80 mb-0.5">ต้นทุนเฉลี่ยต่อชิ้น (รวมทุกอย่าง)</p>
+            <p class="font-display font-semibold text-2xl tnum text-primary" id="r-cost-unit">-</p>
           </div>
-          <div>
-            <p class="text-xs text-primary/70">กำไรต่อชิ้น</p>
-            <p class="font-display font-semibold text-lg tnum" id="r-profit-unit">-</p>
-          </div>
-          <div>
-            <p class="text-xs text-primary/70">% กำไรต่อทุน (Markup)</p>
-            <p class="font-display font-semibold text-lg tnum" id="r-markup">-</p>
-          </div>
-          <div>
-            <p class="text-xs text-primary/70">% กำไรต่อราคาขาย (Margin)</p>
-            <p class="font-display font-semibold text-lg tnum" id="r-margin">-</p>
+          <div class="text-right">
+            <p class="text-xs text-primary/80 mb-0.5">ได้ของทั้งหมด</p>
+            <p class="font-display font-semibold text-lg tnum text-primary/80" id="r-total-items">-</p>
           </div>
         </div>
-        <div class="pt-2 border-t border-primary/15">
-          <p class="text-xs text-primary/70">กำไรรวมทั้งล็อต</p>
-          <p class="font-display font-semibold text-2xl tnum text-primary" id="r-total-profit">-</p>
+        <div class="grid grid-cols-3 gap-2">
+          <div>
+            <p class="text-[10px] text-primary/70">กำไรต่อชิ้น</p>
+            <p class="font-display font-semibold text-base tnum" id="r-profit-unit">-</p>
+          </div>
+          <div>
+            <p class="text-[10px] text-primary/70">Markup (กำไร/ทุน)</p>
+            <p class="font-display font-semibold text-base tnum" id="r-markup">-</p>
+          </div>
+          <div>
+            <p class="text-[10px] text-primary/70">Margin (กำไร/ขาย)</p>
+            <p class="font-display font-semibold text-base tnum" id="r-margin">-</p>
+          </div>
+        </div>
+        <div class="pt-2 border-t border-primary/10">
+          <p class="text-xs text-primary/80 mb-0.5">กำไรรวมล็อตนี้</p>
+          <p class="font-display font-semibold text-xl tnum" id="r-total-profit">-</p>
         </div>
       </div>
 
-      <div class="flex gap-2">
-        <button id="c-clear" class="press flex-1 bg-hairline text-ink py-2.5 rounded-xl font-medium text-sm">ล้างค่า</button>
-        <button id="c-add" disabled class="press flex-[2] bg-primary text-white py-2.5 rounded-xl font-medium text-sm disabled:opacity-40">+ เพิ่มลงรายการเปรียบเทียบ</button>
+      <div class="flex gap-2 mt-4">
+        <button id="c-clear" class="press flex-1 bg-hairline text-ink py-3 rounded-xl font-medium text-sm">ล้างค่า</button>
+        <button id="c-add" disabled class="press flex-[2] bg-ink text-white py-3 rounded-xl font-medium text-sm disabled:opacity-40 transition-opacity">เก็บไว้เปรียบเทียบ</button>
       </div>
     </div>
 
-    <details class="bg-surface border border-hairline rounded-2xl p-4 mb-4">
+    <!-- ส่วนกระทบยอด (เหมือนเดิม) -->
+    <details class="bg-surface border border-hairline rounded-2xl p-4 mb-4 shadow-sm">
       <summary class="font-display font-semibold text-sm cursor-pointer">🎯 อยากได้กำไรกี่% ควรตั้งราคาขายเท่าไหร่</summary>
       <div class="mt-3 space-y-3">
         <div class="flex gap-2">
           <div class="flex-1">
             <label class="text-xs text-muted mb-1 block">ต้นทุนต่อชิ้น</label>
-            <input id="rv-cost" type="number" inputmode="decimal" placeholder="เช่น 8.2" class="w-full text-sm bg-bg rounded-xl px-3 py-2.5 outline-none">
+            <input id="rv-cost" type="number" inputmode="decimal" placeholder="เช่น 8.2" class="w-full text-sm bg-bg rounded-xl px-3 py-2.5 outline-none focus:ring-2 focus:ring-accent/30">
           </div>
           <div class="flex-1">
             <label class="text-xs text-muted mb-1 block">กำไรที่ต้องการ (%)</label>
-            <input id="rv-margin" type="number" inputmode="decimal" placeholder="เช่น 50" class="w-full text-sm bg-bg rounded-xl px-3 py-2.5 outline-none">
+            <input id="rv-margin" type="number" inputmode="decimal" placeholder="เช่น 50" class="w-full text-sm bg-bg rounded-xl px-3 py-2.5 outline-none focus:ring-2 focus:ring-accent/30">
           </div>
         </div>
-        <div id="rv-result" class="hidden bg-accent-light rounded-xl p-3 text-sm text-accent-dark">
-          ควรตั้งราคาขายที่ <span class="font-display font-semibold tnum" id="rv-price">-</span> ต่อชิ้น
+        <div id="rv-result" class="hidden bg-accent-light border border-accent/20 rounded-xl p-3 text-sm text-accent-dark">
+          ควรตั้งราคาขายที่ <span class="font-display font-semibold text-lg tnum" id="rv-price">-</span> ต่อชิ้น
         </div>
       </div>
     </details>
 
-    ${scratch.length > 0 ? `
-    <div class="flex items-center justify-between mb-2">
-      <h2 class="font-display font-semibold text-base">รายการเปรียบเทียบ (${scratch.length})</h2>
-      <button id="c-clear-all" class="press text-xs text-danger font-medium">ล้างทั้งหมด</button>
-    </div>
-    <div id="c-scratch-list" class="space-y-2 mb-4"></div>
-    <div class="bg-ink text-white rounded-2xl p-4 flex items-center justify-between mb-6">
-      <div>
-        <p class="text-xs text-white/60">รวมเงินลงทุนทั้งหมด</p>
-        <p class="font-display font-semibold text-lg tnum" id="c-sum-cost">-</p>
-      </div>
-      <div class="text-right">
-        <p class="text-xs text-white/60">รวมกำไรที่คาดว่าจะได้</p>
-        <p class="font-display font-semibold text-lg tnum text-success" id="c-sum-profit">-</p>
-      </div>
-    </div>` : ''}
+    <div id="comparison-section"></div>
   `;
 
-  root.querySelector('#calc-back').onclick = () => go(state.from === 'inventory' ? 'inventory' : 'dashboard');
+      root.querySelector('#calc-back').onclick = () => go(state.from === 'inventory' ? 'inventory' : 'dashboard');
 
-  const priceEl = root.querySelector('#c-price');
-  const totalEl = root.querySelector('#c-cost-total');
-  const qtyEl = root.querySelector('#c-qty');
-  const resultBox = root.querySelector('#c-result');
-  const addBtn = root.querySelector('#c-add');
+      const inputs = ['#c-price', '#c-cost-total', '#c-misc-cost', '#c-qty', '#c-free-qty'].map(sel => root.querySelector(sel));
+      const [priceEl, totalEl, miscEl, qtyEl, freeEl] = inputs;
+      const resultBox = root.querySelector('#c-result');
+      const addBtn = root.querySelector('#c-add');
 
-  let lastCalc = null;
-  function computeAndRender() {
-    const price = parseFloat(priceEl.value) || 0;
-    const total = parseFloat(totalEl.value) || 0;
-    const qty = parseInt(qtyEl.value, 10) || 0;
-    if (total > 0 && qty > 0 && price >= 0) {
-      const costUnit = total / qty;
-      const profitUnit = price - costUnit;
-      const markup = costUnit > 0 ? (profitUnit / costUnit) * 100 : 0;
-      const margin = price > 0 ? (profitUnit / price) * 100 : 0;
-      const totalProfit = profitUnit * qty;
-      lastCalc = { price, total, qty, costUnit, profitUnit, totalProfit };
+      let lastCalc = null;
 
-      resultBox.classList.remove('hidden');
-      root.querySelector('#r-cost-unit').textContent = `฿${fmtMoney(costUnit)}`;
-      const profitColor = profitUnit >= 0 ? 'text-primary' : 'text-danger';
-      const profitEl = root.querySelector('#r-profit-unit'); profitEl.textContent = `฿${fmtMoney(profitUnit)}`; profitEl.className = `font-display font-semibold text-lg tnum ${profitColor}`;
-      root.querySelector('#r-markup').textContent = `${fmtMoney(markup)}%`;
-      root.querySelector('#r-margin').textContent = `${fmtMoney(margin)}%`;
-      const totalEl2 = root.querySelector('#r-total-profit'); totalEl2.textContent = `฿${fmtMoney(totalProfit)}`; totalEl2.className = `font-display font-semibold text-2xl tnum ${profitUnit >= 0 ? 'text-primary' : 'text-danger'}`;
-      addBtn.disabled = false;
-      root.querySelector('#rv-cost').value = costUnit.toFixed(2);
-    } else {
-      resultBox.classList.add('hidden');
-      addBtn.disabled = true;
-      lastCalc = null;
+      function computeAndRender() {
+        const price = parseMath(priceEl.value);
+        const total = parseMath(totalEl.value);
+        const misc = parseMath(miscEl.value);
+        const qty = parseMath(qtyEl.value);
+        const freeQty = parseMath(freeEl.value);
+
+        const totalCostSum = total + misc;
+        const totalQtySum = qty + freeQty;
+
+        if (totalCostSum > 0 && totalQtySum > 0 && price >= 0) {
+          const costUnit = totalCostSum / totalQtySum;
+          const profitUnit = price - costUnit;
+          const markup = costUnit > 0 ? (profitUnit / costUnit) * 100 : 0;
+          const margin = price > 0 ? (profitUnit / price) * 100 : 0;
+          const totalProfit = profitUnit * totalQtySum; // นำของแถมมาทำกำไรด้วย
+          
+          lastCalc = { 
+            price, total: totalCostSum, qty: totalQtySum, 
+            costUnit, profitUnit, totalProfit 
+          };
+
+          resultBox.classList.remove('hidden');
+          root.querySelector('#r-cost-unit').textContent = `฿${fmtMoney(costUnit)}`;
+          root.querySelector('#r-total-items').textContent = `${totalQtySum} ชิ้น`;
+          
+          const profitColor = profitUnit >= 0 ? 'text-primary' : 'text-danger';
+          
+          const pUnitEl = root.querySelector('#r-profit-unit');
+          pUnitEl.textContent = `฿${fmtMoney(profitUnit)}`;
+          pUnitEl.className = `font-display font-semibold text-base tnum ${profitColor}`;
+          
+          root.querySelector('#r-markup').textContent = `${fmtMoney(markup)}%`;
+          root.querySelector('#r-margin').textContent = `${fmtMoney(margin)}%`;
+          
+          const pTotalEl = root.querySelector('#r-total-profit');
+          pTotalEl.textContent = `฿${fmtMoney(totalProfit)}`;
+          pTotalEl.className = `font-display font-semibold text-xl tnum ${profitColor}`;
+          
+          addBtn.disabled = false;
+          root.querySelector('#rv-cost').value = costUnit.toFixed(2);
+        } else {
+          resultBox.classList.add('hidden');
+          addBtn.disabled = true;
+          lastCalc = null;
+        }
+      }
+
+      inputs.forEach(el => el.addEventListener('input', computeAndRender));
+
+      root.querySelector('#c-clear').onclick = () => {
+        root.querySelector('#c-name').value = '';
+        inputs.forEach(el => el.value = '');
+        computeAndRender();
+      };
+
+      addBtn.onclick = () => {
+        if (!lastCalc) return;
+        const name = root.querySelector('#c-name').value.trim() || 'สินค้าไม่มีชื่อ';
+        scratch.push({ id: uid('calc'), name, ...lastCalc });
+        saveCalcScratch(scratch);
+        toast('เพิ่มลงรายการเปรียบเทียบแล้ว ✓', 'success');
+        go('calculator', state);
+      };
+
+      // ส่วนคำนวณราคาขาย (Reverse Margin)
+      const rvCost = root.querySelector('#rv-cost');
+      const rvMargin = root.querySelector('#rv-margin');
+      const rvResult = root.querySelector('#rv-result');
+      function computeReverse() {
+        const cost = parseMath(rvCost.value);
+        const marginPct = parseMath(rvMargin.value);
+        if (cost > 0 && marginPct > 0) {
+          const suggested = cost / (1 - (marginPct / 100)); // คำนวณ Margin ที่ถูกต้อง (ไม่ใช่ Markup)
+          rvResult.classList.remove('hidden');
+          root.querySelector('#rv-price').textContent = `฿${fmtMoney(suggested)}`;
+        } else {
+          rvResult.classList.add('hidden');
+        }
+      }
+      rvCost.addEventListener('input', computeReverse);
+      rvMargin.addEventListener('input', computeReverse);
+
+      // เรนเดอร์รายการเปรียบเทียบ (Scratch list)
+      function renderComparison() {
+        const wrap = root.querySelector('#comparison-section');
+        if (scratch.length === 0) {
+          wrap.innerHTML = '';
+          return;
+        }
+
+        // หาต้นทุนต่อชิ้นที่ถูกที่สุดเพื่อไฮไลท์
+        const minCost = Math.min(...scratch.map(s => s.costUnit));
+
+        wrap.innerHTML = `
+          <div class="flex items-center justify-between mb-3 border-t border-hairline pt-4">
+            <h2 class="font-display font-semibold text-base">รายการเปรียบเทียบ (${scratch.length})</h2>
+            <button id="c-clear-all" class="press text-xs text-danger font-medium bg-danger-light px-2 py-1 rounded-md">ล้างทั้งหมด</button>
+          </div>
+          <div class="space-y-2 mb-6">
+            ${scratch.map(s => {
+              const isBest = scratch.length > 1 && s.costUnit === minCost;
+              return `
+              <div class="border ${isBest ? 'border-success bg-success-light/30' : 'border-hairline bg-surface'} rounded-xl px-4 py-3 flex items-center justify-between relative shadow-sm">
+                ${isBest ? `<div class="absolute -top-2.5 right-4 bg-success text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm pop-in">👑 คุ้มสุด</div>` : ''}
+                <div class="min-w-0">
+                  <p class="text-sm font-medium truncate mb-0.5">${escapeHTML(s.name)}</p>
+                  <p class="text-xs ${isBest ? 'text-success-dark font-medium' : 'text-muted'}">
+                    ทุน ฿${fmtMoney(s.costUnit)}/ชิ้น · ${s.qty} ชิ้น
+                  </p>
+                  <p class="text-[10px] text-muted">ลงทุนรวม ฿${fmtMoney(s.total)}</p>
+                </div>
+                <div class="flex flex-col items-end gap-1 shrink-0">
+                  <span class="font-display font-semibold text-sm tnum ${s.profitUnit >= 0 ? 'text-primary' : 'text-danger'}">
+                    +฿${fmtMoney(s.totalProfit)}
+                  </span>
+                  <button data-del-calc="${s.id}" class="press text-xs text-danger flex items-center gap-1 mt-1">
+                    ลบ
+                  </button>
+                </div>
+              </div>`
+            }).join('')}
+          </div>
+        `;
+
+        wrap.querySelectorAll('[data-del-calc]').forEach(btn => btn.onclick = () => {
+          scratch = scratch.filter(s => s.id !== btn.dataset.delCalc);
+          saveCalcScratch(scratch);
+          renderComparison();
+        });
+
+        wrap.querySelector('#c-clear-all').onclick = () => {
+          scratch = [];
+          saveCalcScratch(scratch);
+          renderComparison();
+        };
+      }
+
+      renderComparison();
     }
-  }
-  [priceEl, totalEl, qtyEl].forEach(el => el.addEventListener('input', computeAndRender));
 
-  root.querySelector('#c-clear').onclick = () => {
-    root.querySelector('#c-name').value = '';
-    priceEl.value = ''; totalEl.value = ''; qtyEl.value = '';
-    computeAndRender();
-  };
-
-  addBtn.onclick = () => {
-    if (!lastCalc) return;
-    const name = root.querySelector('#c-name').value.trim() || 'สินค้าไม่มีชื่อ';
-    scratch.push({ id: uid('calc'), name, ...lastCalc });
-    saveCalcScratch(scratch);
-    toast('เพิ่มลงรายการเปรียบเทียบแล้ว ✓', 'success');
-    go('calculator', state);
-  };
-
-  // reverse calculator: desired margin over cost -> suggested price
-  const rvCost = root.querySelector('#rv-cost');
-  const rvMargin = root.querySelector('#rv-margin');
-  const rvResult = root.querySelector('#rv-result');
-  function computeReverse() {
-    const cost = parseFloat(rvCost.value) || 0;
-    const marginPct = parseFloat(rvMargin.value);
-    if (cost > 0 && !isNaN(marginPct)) {
-      const suggested = cost * (1 + marginPct / 100);
-      rvResult.classList.remove('hidden');
-      root.querySelector('#rv-price').textContent = `฿${fmtMoney(suggested)}`;
-    } else {
-      rvResult.classList.add('hidden');
-    }
-  }
-  rvCost.addEventListener('input', computeReverse);
-  rvMargin.addEventListener('input', computeReverse);
-
-  // scratch list
-  if (scratch.length > 0) {
-    const listEl = root.querySelector('#c-scratch-list');
-    listEl.innerHTML = scratch.map(s => `
-      <div class="bg-surface border border-hairline rounded-xl px-4 py-3 flex items-center justify-between">
-        <div class="min-w-0">
-          <p class="text-sm font-medium truncate">${s.name}</p>
-          <p class="text-xs text-muted">ทุน ฿${fmtMoney(s.costUnit)}/ชิ้น · ${s.qty} ชิ้น · รวม ฿${fmtMoney(s.total)}</p>
-        </div>
-        <div class="flex items-center gap-2 shrink-0">
-          <span class="font-display font-semibold text-sm tnum ${s.profitUnit >= 0 ? 'text-primary' : 'text-danger'}">+฿${fmtMoney(s.totalProfit)}</span>
-          <button data-del-calc="${s.id}" class="press w-7 h-7 rounded-full bg-danger-light text-danger flex items-center justify-center text-sm">×</button>
-        </div>
-      </div>`).join('');
-    listEl.querySelectorAll('[data-del-calc]').forEach(btn => btn.onclick = () => {
-      scratch = scratch.filter(s => s.id !== btn.dataset.delCalc);
-      saveCalcScratch(scratch);
-      go('calculator', state);
-    });
-    const sumCost = scratch.reduce((s, x) => s + x.total, 0);
-    const sumProfit = scratch.reduce((s, x) => s + x.totalProfit, 0);
-    root.querySelector('#c-sum-cost').textContent = `฿${fmtMoney(sumCost)}`;
-    root.querySelector('#c-sum-profit').textContent = `฿${fmtMoney(sumProfit)}`;
-    root.querySelector('#c-clear-all').onclick = () => {
-      scratch = [];
-      saveCalcScratch(scratch);
-      go('calculator', state);
-    };
-  }
-}
-
-/* ============================================================
-   12) INIT
-   ============================================================ */
-if (!CONFIGURED) {
-  document.getElementById('app').innerHTML = `
+    /* ============================================================
+       12) INIT
+       ============================================================ */
+    if (!CONFIGURED) {
+      document.getElementById('app').innerHTML = `
     <div class="bg-danger-light border border-danger/30 text-danger rounded-2xl p-4 text-sm">
       ยังไม่ได้ตั้งค่า Supabase — กรุณาใส่ค่า <b>SUPABASE_URL</b> และ <b>SUPABASE_ANON_KEY</b>
       ที่ด้านบนของไฟล์ก่อนใช้งานจริง
     </div>`;
-  toast('ยังไม่ได้ตั้งค่า Supabase', 'error');
-} else {
-  updateNetBadge();
-  go('dashboard');
-  if (navigator.onLine) syncQueue();
-}
+      toast('ยังไม่ได้ตั้งค่า Supabase', 'error');
+    } else {
+      updateNetBadge();
+      go('dashboard');
+      if (navigator.onLine) syncQueue();
+    }
 
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js').catch(() => {});
-  });
-}
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch(() => { });
+      });
+    }
 
+    /* ============================================================
+       13) ACCOUNTS & TRANSACTIONS OVERVIEW
+       ============================================================ */
+    async function renderAccounts(root, state) {
+      const activeTab = state.tab || 'business'; // 'business' | 'personal'
+      const timeFilter = state.filter || 'month'; // 'day' | 'week' | 'month' | 'all'
 
-</script>
+      root.innerHTML = `
+    <div class="flex items-center gap-3 mb-5">
+      <button id="acc-back" class="press text-muted flex items-center justify-center w-9 h-9 rounded-full bg-surface border border-hairline shadow-sm">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
+      </button>
+      <h1 class="font-display text-2xl font-semibold">รายการแยกบัญชี</h1>
+    </div>
+
+    <!-- Tabs สลับประเภทบัญชี -->
+    <div class="flex bg-surface rounded-full p-1 border border-hairline mb-4 relative shadow-sm">
+      <div id="acc-seg" class="absolute top-1 bottom-1 w-1/2 rounded-full bg-primary transition-transform duration-300 ease-out" style="transform: translateX(${activeTab === 'business' ? '0%' : '100%'})"></div>
+      <button data-acctab="business" class="relative z-10 flex-1 py-2 text-sm font-medium rounded-full transition-colors ${activeTab === 'business' ? 'text-white' : 'text-ink'}">🏪 บัญชีร้านค้า</button>
+      <button data-acctab="personal" class="relative z-10 flex-1 py-2 text-sm font-medium rounded-full transition-colors ${activeTab === 'personal' ? 'text-white' : 'text-ink'}">👤 บัญชีส่วนตัว</button>
+    </div>
+
+    <!-- Filter กรองเวลา -->
+    <div class="flex gap-2 overflow-x-auto no-scrollbar mb-4 pb-1">
+      ${[['day', 'วันนี้'], ['week', '7 วันล่าสุด'], ['month', 'เดือนนี้'], ['all', 'ทั้งหมด']].map(([k, l]) => `
+        <button data-tfilter="${k}" class="press whitespace-nowrap text-xs font-medium px-4 py-2 rounded-full transition-colors ${timeFilter === k ? 'bg-ink text-white' : 'bg-surface border border-hairline text-muted'}">${l}</button>
+      `).join('')}
+    </div>
+
+    <div id="acc-content">
+      ${skeleton('h-40')}
+      <div class="mt-4">${skeleton('h-16')}</div>
+      <div class="mt-2">${skeleton('h-16')}</div>
+    </div>
+  `;
+
+      // ผูก Event ปุ่มย้อนกลับ และสลับ Tab/Filter
+      root.querySelector('#acc-back').onclick = () => go('dashboard');
+
+      root.querySelectorAll('[data-acctab]').forEach(btn => btn.onclick = () => {
+        if (activeTab === btn.dataset.acctab) return;
+        go('accounts', { ...state, tab: btn.dataset.acctab, filter: timeFilter });
+      });
+
+      root.querySelectorAll('[data-tfilter]').forEach(btn => btn.onclick = () => {
+        if (timeFilter === btn.dataset.tfilter) return;
+        go('accounts', { ...state, tab: activeTab, filter: btn.dataset.tfilter });
+      });
+
+      try {
+        // โหลดข้อมูลบัญชีทั้งหมด และรายการเคลื่อนไหวตามเวลาที่กรอง
+        const [accounts, transactions] = await Promise.all([
+          DB.getAccounts(),
+          DB.getAllTransactions(timeFilter)
+        ]);
+
+        // กรองเฉพาะบัญชีที่ตรงกับ Tab ปัจจุบัน
+        const activeAccounts = accounts.filter(a => a.type === activeTab);
+        const activeAccIds = activeAccounts.map(a => a.id);
+
+        // กรองเฉพาะ Transaction ของบัญชีเหล่านั้น
+        const activeTxs = transactions.filter(t => activeAccIds.includes(t.account_id));
+
+        // คำนวณสรุปยอด
+        const totalBalance = activeAccounts.reduce((sum, a) => sum + a.balance, 0);
+        const totalIncome = activeTxs.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
+        const totalExpense = activeTxs.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+
+        let contentHtml = `
+      <!-- สรุปยอดรวมบัตรใหญ่ -->
+      <div class="bg-primary text-white rounded-3xl p-5 shadow-lg mb-6 relative overflow-hidden pop-in">
+        <div class="absolute -right-4 -top-4 opacity-10">
+          <svg width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/><circle cx="16.5" cy="14.5" r="1.5" fill="currentColor" stroke="none"/></svg>
+        </div>
+        <p class="text-white/80 text-sm mb-1">เงินคงเหลือรวมทั้งหมด (${activeTab === 'business' ? 'ร้านค้า' : 'ส่วนตัว'})</p>
+        <p class="font-display font-semibold text-3xl tnum mb-5">฿${fmtMoney(totalBalance)}</p>
+        
+        <div class="flex items-center gap-4 pt-4 border-t border-white/20">
+          <div class="flex-1">
+            <p class="text-xs text-white/70 mb-1 flex items-center gap-1">
+              <span class="w-4 h-4 rounded-full bg-success/20 flex items-center justify-center"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" class="text-success-light"><path d="M12 19V5M5 12l7-7 7 7"/></svg></span> รายรับ
+            </p>
+            <p class="font-display font-semibold text-lg text-success-light tnum">+฿${fmtMoney(totalIncome)}</p>
+          </div>
+          <div class="w-px h-10 bg-white/20"></div>
+          <div class="flex-1">
+            <p class="text-xs text-white/70 mb-1 flex items-center gap-1">
+              <span class="w-4 h-4 rounded-full bg-danger/20 flex items-center justify-center"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" class="text-danger-light"><path d="M12 5v14M19 12l-7 7-7-7"/></svg></span> รายจ่าย
+            </p>
+            <p class="font-display font-semibold text-lg text-danger-light tnum">-฿${fmtMoney(totalExpense)}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- แยกยอดแต่ละบัญชี -->
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="font-display font-semibold text-base">ยอดคงเหลือแต่ละบัญชี</h2>
+      </div>
+      <div class="grid grid-cols-2 gap-3 mb-6">
+        ${activeAccounts.map((a, i) => `
+          <div class="bg-surface border border-hairline rounded-2xl p-4 shadow-sm pop-in" style="animation-delay: ${i * 50}ms">
+            <p class="text-xs font-medium text-muted truncate mb-1.5">${a.name}</p>
+            <p class="font-display font-semibold text-lg tnum text-primary">฿${fmtMoney(a.balance)}</p>
+          </div>
+        `).join('')}
+      </div>
+
+      <!-- รายการเคลื่อนไหว (Transactions) -->
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="font-display font-semibold text-base">รายการเคลื่อนไหว</h2>
+        <span class="text-xs text-muted">${activeTxs.length} รายการ</span>
+      </div>
+      
+      <div class="space-y-3 pb-8">
+        ${activeTxs.length === 0 ? `
+          <div class="text-center py-8 bg-surface border border-dashed border-hairline rounded-2xl">
+            <p class="text-sm text-muted">ไม่มีรายการเข้า-ออกในช่วงเวลานี้</p>
+          </div>
+        ` : activeTxs.map((t, i) => {
+          const acc = activeAccounts.find(a => a.id === t.account_id);
+          const isIncome = t.type === 'income';
+          return `
+          <div class="bg-surface border border-hairline rounded-2xl p-3.5 flex items-center gap-3 shadow-sm pop-in" style="animation-delay: ${i * 30}ms">
+            <div class="w-11 h-11 rounded-xl ${isIncome ? 'bg-success-light text-success' : 'bg-danger-light text-danger'} flex items-center justify-center shrink-0">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                ${isIncome ? '<path d="M12 19V5M5 12l7-7 7 7"/>' : '<path d="M12 5v14M19 12l-7 7-7-7"/>'}
+              </svg>
+            </div>
+            <div class="min-w-0 flex-1">
+              <p class="text-[15px] font-medium truncate">${t.category}</p>
+              <p class="text-xs text-muted truncate mt-0.5">
+                <span class="font-medium text-ink/70">${acc?.name || 'ไม่ทราบ'}</span> ${t.note ? `· ${t.note}` : ''}
+              </p>
+            </div>
+            <div class="text-right shrink-0">
+              <p class="font-display font-semibold text-base tnum ${isIncome ? 'text-success' : 'text-danger'}">
+                ${isIncome ? '+' : '-'}฿${fmtMoney(t.amount)}
+              </p>
+              <p class="text-[10px] text-muted mt-0.5">${new Date(t.created_at).toLocaleDateString('th-TH', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+            </div>
+          </div>
+        `}).join('')}
+      </div>
+    `;
+
+        root.querySelector('#acc-content').innerHTML = contentHtml;
+
+      } catch (e) {
+        console.error(e);
+        root.querySelector('#acc-content').innerHTML = `
+      <div class="bg-danger-light border border-danger/20 rounded-2xl p-4 text-center">
+        <p class="text-danger text-sm">โหลดข้อมูลไม่สำเร็จ: ${e.message}</p>
+        <button class="mt-2 text-xs font-medium text-danger underline" onclick="refreshCurrentRoute()">ลองใหม่</button>
+      </div>`;
+      }
+    }
+
+    /* ============================================================
+       14) ADVANCED ANALYTICS DASHBOARD
+       ============================================================ */
+    async function renderAnalytics(root) {
+      root.innerHTML = `
+    <div class="flex items-center gap-3 mb-5">
+      <button id="an-back" class="press text-muted flex items-center justify-center w-9 h-9 rounded-full bg-surface border border-hairline shadow-sm">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
+      </button>
+      <h1 class="font-display text-2xl font-semibold">สถิติเชิงลึก (7 วัน)</h1>
+    </div>
+
+    <div class="bg-surface border border-hairline rounded-3xl p-4 shadow-sm mb-4 pop-in">
+      <h2 class="font-display font-medium text-sm mb-3">📈 แนวโน้มรายรับ vs รายจ่าย (7 วันล่าสุด)</h2>
+      <div class="relative w-full h-48">
+        <canvas id="trendChart"></canvas>
+      </div>
+    </div>
+
+    <div class="bg-surface border border-hairline rounded-3xl p-4 shadow-sm pop-in" style="animation-delay: 50ms;">
+      <h2 class="font-display font-medium text-sm mb-3">🍩 สัดส่วนรายจ่ายแยกตามหมวดหมู่</h2>
+      <div class="relative w-full h-48 flex justify-center">
+        <canvas id="expenseChart"></canvas>
+      </div>
+    </div>
+  `;
+
+      root.querySelector('#an-back').onclick = () => go('dashboard');
+
+      try {
+        const txs = await DB.getAnalyticsData(); // ดึง tx ย้อนหลังสัปดาห์นึง
+
+        // 1. ประมวลผลข้อมูลสำหรับกราฟเส้น (รับ-จ่าย รายวัน)
+        const last7Days = [...Array(7)].map((_, i) => {
+          const d = new Date(); d.setDate(d.getDate() - i);
+          return d.toLocaleDateString('th-TH', { month: 'short', day: 'numeric' });
+        }).reverse();
+
+        const dailyIncome = Array(7).fill(0);
+        const dailyExpense = Array(7).fill(0);
+
+        txs.forEach(t => {
+          const dStr = new Date(t.created_at).toLocaleDateString('th-TH', { month: 'short', day: 'numeric' });
+          const idx = last7Days.indexOf(dStr);
+          if (idx !== -1) {
+            if (t.type === 'income') dailyIncome[idx] += t.amount;
+            if (t.type === 'expense') dailyExpense[idx] += t.amount;
+          }
+        });
+
+        // วาดกราฟเส้น Trend
+        new Chart(document.getElementById('trendChart'), {
+          type: 'line',
+          data: {
+            labels: last7Days,
+            datasets: [
+              { label: 'รายรับ', data: dailyIncome, borderColor: '#3FA34D', backgroundColor: '#3FA34D33', fill: true, tension: 0.4 },
+              { label: 'รายจ่าย', data: dailyExpense, borderColor: '#D9483F', backgroundColor: '#D9483F33', fill: true, tension: 0.4 }
+            ]
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { position: 'bottom', labels: { font: { family: 'Sarabun' } } } },
+            scales: { y: { beginAtZero: true, ticks: { font: { family: 'Sarabun' } } }, x: { ticks: { font: { family: 'Sarabun' } } } }
+          }
+        });
+
+        // 2. ประมวลผลข้อมูลสำหรับกราฟโดนัท (สัดส่วนหมวดหมู่รายจ่าย)
+        const expenses = txs.filter(t => t.type === 'expense');
+        const expByCategory = {};
+        expenses.forEach(t => { expByCategory[t.category] = (expByCategory[t.category] || 0) + t.amount; });
+
+        const expLabels = Object.keys(expByCategory);
+        const expData = Object.values(expByCategory);
+        const bgColors = ['#D9483F', '#F2A33C', '#145C52', '#6B7770', '#1B2420', '#D8DED2'];
+
+        new Chart(document.getElementById('expenseChart'), {
+          type: 'doughnut',
+          data: {
+            labels: expLabels.length ? expLabels : ['ไม่มีข้อมูล'],
+            datasets: [{
+              data: expData.length ? expData : [1],
+              backgroundColor: expData.length ? bgColors : ['#E4E7E0'],
+              borderWidth: 2
+            }]
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+              legend: { position: 'right', labels: { font: { family: 'Sarabun' }, boxWidth: 12 } }
+            },
+            cutout: '65%'
+          }
+        });
+
+      } catch (e) {
+        toast('โหลดข้อมูลสถิติไม่สำเร็จ', 'error');
+      }
+    }
+  </script>
 </body>
+
 </html>
