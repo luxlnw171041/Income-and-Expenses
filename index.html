@@ -516,6 +516,18 @@
         const { data, error } = await supabase.from('shelves').insert({ building_id, floor }).select().single();
         if (error) throw error; return data;
       },
+      async updateBuilding(id, name) {
+      const { data, error } = await supabase.from('buildings').update({ name }).eq('id', id).select().single();
+      if (error) throw error; return data;
+        },
+      async deleteBuilding(id) {
+        const { error } = await supabase.from('buildings').delete().eq('id', id);
+        if (error) throw error;
+      },
+      async deleteShelf(id) {
+        const { error } = await supabase.from('shelves').delete().eq('id', id);
+        if (error) throw error;
+      },
       async addProduct(p) {
         const { data, error } = await supabase.from('products').insert(p).select().single();
         if (error) throw error; return data;
@@ -548,10 +560,16 @@
       return { ...p, cost_price: latest ? latest.cost_price : null, remaining_units };
     });
   },
-      async assignProductToShelf(shelf_id, product_id, quantity) {
-        const { data, error } = await supabase.from('product_shelves').upsert({ shelf_id, product_id, quantity }, { onConflict: 'shelf_id,product_id' }).select().single();
-        if (error) throw error; return data;
-      },
+     async assignProductToShelf(shelf_id, product_id, quantity) {
+    // เปลี่ยนจาก .upsert() ไปเป็นการเรียกใช้ RPC ที่เราเพิ่งสร้างใหม่เพื่อให้มันช่วยเช็คจำนวน
+    const { data, error } = await supabase.rpc('assign_product_to_shelf', {
+      p_shelf_id: shelf_id,
+      p_product_id: product_id,
+      p_qty: quantity
+    });
+    if (error) throw error; 
+    return data;
+  },
       async updateProduct(id, patch) {
         const { data, error } = await supabase.from('products').update(patch).eq('id', id).select().single();
         if (error) throw error; return data;
@@ -675,6 +693,15 @@
           <div class="text-left">
             <div class="font-display font-medium text-sm">ดูรายการแยกบัญชี</div>
             <div class="text-xs text-muted">เข้า-ออก ยอดคงเหลือ กรองวัน/สัปดาห์/เดือน</div>
+          </div>
+        </button>
+        <button onclick="window.location.href='product_locations.html'" class="press col-span-2 bg-accent text-white rounded-2xl p-4 flex items-center gap-3 shadow-sm">
+          <div class="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8 12 3 3 8l9 5 9-5Z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg>
+          </div>
+          <div class="text-left">
+            <div class="font-display font-medium text-sm">ตรวจสอบจุดวางสินค้าทั้งหมด</div>
+            <div class="text-xs text-white/80">ดูจำนวนรวม เพิ่ม/ลด/ย้าย ตำแหน่งชั้นวาง</div>
           </div>
         </button>
         <button id="qa-calc" class="press col-span-2 bg-surface border border-hairline rounded-2xl p-4 flex items-center gap-3 shadow-sm">
@@ -821,7 +848,7 @@
         bar.id = 'save-bar';
         bar.className = 'fixed left-0 right-0 z-50 bg-gradient-to-t from-bg via-bg to-bg/0 pt-6';
         bar.innerHTML = `
-      <div class="max-w-md mx-auto px-4 pb-3">
+      <div class="max-w-md mx-auto px-4 pb-28">
         <button id="save-audit" class="press w-full bg-primary text-white font-display font-medium text-base py-4 rounded-2xl shadow-lg flex items-center justify-center gap-2">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
           บันทึกการนับสต็อก
@@ -1598,67 +1625,130 @@
       const body = root.querySelector('#inv-body');
 
       if (tab === 'buildings') {
-        const buildings = await DB.getBuildings();
-        // Was: sequential `for...of` + `await`, firing one request per building
-        // one at a time (N+1 round trips). Fetch all shelves concurrently instead.
-        const shelvesByB = {};
-        const shelvesList = await Promise.all(buildings.map(b => DB.getShelves(b.id)));
-        buildings.forEach((b, i) => { shelvesByB[b.id] = shelvesList[i]; });
-        body.innerHTML = `
+    const buildings = await DB.getBuildings();
+    const shelvesByB = {};
+    const shelvesList = await Promise.all(buildings.map(b => DB.getShelves(b.id)));
+    buildings.forEach((b, i) => { shelvesByB[b.id] = shelvesList[i]; });
+    
+    body.innerHTML = `
       <div class="bg-surface border border-hairline rounded-2xl p-4 mb-4">
         <p class="font-display font-medium text-sm mb-2">เพิ่มตึกใหม่</p>
         <div class="flex gap-2">
-          <input id="new-building" placeholder="ชื่อตึก เช่น ตึก C" class="flex-1 text-sm bg-bg rounded-xl px-3 py-2.5 outline-none">
+          <input id="new-building" placeholder="ชื่อตึก เช่น ตึก C" class="flex-1 text-sm bg-bg rounded-xl px-3 py-2.5 outline-none border border-hairline focus:border-primary">
           <button id="add-building" class="press bg-primary text-white px-4 rounded-xl font-medium text-sm">เพิ่ม</button>
         </div>
       </div>
       <div class="space-y-3">
         ${buildings.map(b => `
           <div class="bg-surface border border-hairline rounded-2xl p-4">
-            <div class="flex items-center justify-between mb-3">
-              <p class="font-display font-semibold">${b.name}</p>
-              <span class="text-xs text-muted">${shelvesByB[b.id].length} ชั้น</span>
+            <div class="flex items-center justify-between mb-3 border-b border-hairline pb-2">
+              <div class="flex items-center gap-2">
+                <p class="font-display font-semibold text-lg">${b.name}</p>
+                <button data-edit-bld="${b.id}" class="press text-muted hover:text-primary">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                </button>
+              </div>
+              <div class="flex items-center gap-3">
+                <span class="text-xs text-muted">${shelvesByB[b.id].length} ชั้น</span>
+                <button data-del-bld="${b.id}" class="press text-danger-light hover:text-danger bg-danger/10 w-7 h-7 rounded-full flex items-center justify-center">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                </button>
+              </div>
             </div>
-            <div class="flex flex-wrap gap-2 mb-3">
-              ${shelvesByB[b.id].map(s => `<span class="text-xs bg-hairline px-2.5 py-1 rounded-full">ชั้น ${s.floor}</span>`).join('') || '<span class="text-xs text-muted">ยังไม่มีชั้น</span>'}
+            
+            <div class="flex flex-wrap gap-2 mb-4">
+              ${shelvesByB[b.id].map(s => `
+                <span class="inline-flex items-center gap-1.5 text-xs bg-bg border border-hairline pl-3 pr-1.5 py-1.5 rounded-full">
+                  ชั้น ${s.floor}
+                  <button data-del-shelf="${s.id}" class="press w-5 h-5 rounded-full bg-danger-light text-danger flex items-center justify-center font-bold">×</button>
+                </span>
+              `).join('') || '<span class="text-xs text-muted bg-bg px-3 py-1.5 rounded-full">ยังไม่มีชั้นวาง</span>'}
             </div>
+            
             <div class="flex gap-2">
-              <input data-newfloor="${b.id}" type="number" placeholder="เลขชั้นใหม่" class="flex-1 text-sm bg-bg rounded-xl px-3 py-2 outline-none">
-              <button data-addfloor="${b.id}" class="press bg-primary-light text-primary px-3 rounded-xl text-sm font-medium">+ เพิ่มชั้น</button>
+              <input data-newfloor="${b.id}" type="number" placeholder="เลขชั้นใหม่" class="flex-1 text-sm bg-bg rounded-xl px-3 py-2 outline-none border border-hairline focus:border-primary">
+              <button data-addfloor="${b.id}" class="press bg-primary-light text-primary border border-primary/20 px-3 rounded-xl text-sm font-medium">+ เพิ่มชั้น</button>
             </div>
           </div>`).join('')}
       </div>
     `;
-        const addBuildingBtn = body.querySelector('#add-building');
-        addBuildingBtn.onclick = async () => {
-          const val = body.querySelector('#new-building').value.trim();
-          if (!val || addBuildingBtn.disabled) return;
-          addBuildingBtn.disabled = true;
-          try {
-            await DB.addBuilding(val);
-            toast('เพิ่มตึกสำเร็จ ✓', 'success');
-            go('inventory', { tab: 'buildings' });
-          } catch (e) {
-            toast('เพิ่มตึกไม่สำเร็จ: ' + e.message, 'error');
-            addBuildingBtn.disabled = false;
-          }
-        };
-        body.querySelectorAll('[data-addfloor]').forEach(btn => btn.onclick = async () => {
-          const input = body.querySelector(`[data-newfloor="${btn.dataset.addfloor}"]`);
-          const floor = parseInt(input.value, 10);
-          if (!floor) return toast('ใส่เลขชั้น', 'error');
-          if (btn.disabled) return;
-          btn.disabled = true;
-          try {
-            await DB.addShelf(btn.dataset.addfloor, floor);
-            toast('เพิ่มชั้นสำเร็จ ✓', 'success');
-            go('inventory', { tab: 'buildings' });
-          } catch (e) {
-            toast('เพิ่มชั้นไม่สำเร็จ: ' + e.message, 'error');
-            btn.disabled = false;
-          }
-        });
+
+    // 1. เพิ่มตึก
+    const addBuildingBtn = body.querySelector('#add-building');
+    addBuildingBtn.onclick = async () => {
+      const val = body.querySelector('#new-building').value.trim();
+      if (!val || addBuildingBtn.disabled) return;
+      addBuildingBtn.disabled = true;
+      try {
+        await DB.addBuilding(val);
+        toast('เพิ่มตึกสำเร็จ ✓', 'success');
+        go('inventory', { tab: 'buildings' });
+      } catch (e) {
+        toast('เพิ่มตึกไม่สำเร็จ: ' + e.message, 'error');
+        addBuildingBtn.disabled = false;
       }
+    };
+
+    // 2. เพิ่มชั้น
+    body.querySelectorAll('[data-addfloor]').forEach(btn => btn.onclick = async () => {
+      const input = body.querySelector(`[data-newfloor="${btn.dataset.addfloor}"]`);
+      const floor = parseInt(input.value, 10);
+      if (!floor) return toast('ใส่เลขชั้น', 'error');
+      if (btn.disabled) return;
+      btn.disabled = true;
+      try {
+        await DB.addShelf(btn.dataset.addfloor, floor);
+        toast('เพิ่มชั้นสำเร็จ ✓', 'success');
+        go('inventory', { tab: 'buildings' });
+      } catch (e) {
+        toast('เพิ่มชั้นไม่สำเร็จ: ' + e.message, 'error');
+        btn.disabled = false;
+      }
+    });
+
+    // 3. แก้ไขชื่อตึก
+    body.querySelectorAll('[data-edit-bld]').forEach(btn => btn.onclick = async () => {
+      const bldId = btn.dataset.editBld;
+      const bld = buildings.find(b => b.id === bldId);
+      const newName = prompt('แก้ไขชื่อตึก:', bld.name);
+      
+      if (!newName || newName.trim() === bld.name) return; // ถ้าไม่พิมพ์อะไรหรือชื่อเดิมให้ยกเลิก
+      
+      try {
+        await DB.updateBuilding(bldId, newName.trim());
+        toast('แก้ไขชื่อตึกสำเร็จ ✓', 'success');
+        go('inventory', { tab: 'buildings' });
+      } catch (e) { toast('แก้ไขไม่สำเร็จ: ' + e.message, 'error'); }
+    });
+
+    // 4. ลบตึก
+    body.querySelectorAll('[data-del-bld]').forEach(btn => btn.onclick = async () => {
+      const bldId = btn.dataset.delBld;
+      if (!confirm('ยืนยันการลบตึกนี้? \n\n*หมายเหตุ: จะลบได้ก็ต่อเมื่อไม่มีชั้นและไม่มีสินค้าค้างอยู่ในตึกนี้แล้วเท่านั้น')) return;
+      
+      try {
+        await DB.deleteBuilding(bldId);
+        toast('ลบตึกสำเร็จ ✓', 'success');
+        go('inventory', { tab: 'buildings' });
+      } catch (e) { 
+        toast('ลบไม่ได้! ต้องเคลียร์ชั้นและสินค้าในตึกนี้ออกให้หมดก่อน', 'error'); 
+      }
+    });
+
+    // 5. ลบชั้น
+    body.querySelectorAll('[data-del-shelf]').forEach(btn => btn.onclick = async () => {
+      const shelfId = btn.dataset.delShelf;
+      if (!confirm('ยืนยันการลบชั้นนี้? \n\n*หมายเหตุ: จะลบได้ก็ต่อเมื่อไม่มีสินค้าวางอยู่บนชั้นนี้แล้ว')) return;
+      
+      try {
+        await DB.deleteShelf(shelfId);
+        toast('ลบชั้นสำเร็จ ✓', 'success');
+        go('inventory', { tab: 'buildings' });
+      } catch (e) { 
+        toast('ลบไม่ได้! ต้องดึงสินค้าออกจากชั้นนี้ให้หมดก่อน', 'error'); 
+      }
+    });
+  }
 
       if (tab === 'products') {
         const products = await DB.getProductsWithCost();

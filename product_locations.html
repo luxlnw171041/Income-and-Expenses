@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>ตรวจสอบจุดวางสินค้า</title>
+<meta name="theme-color" content="#145C52">
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;500;600;700&family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          bg: '#F5F7F1', surface: '#FFFFFF',
+          primary: { DEFAULT: '#145C52', dark: '#0E453D', light: '#E4EFEA' },
+          accent: { DEFAULT: '#F2A33C', dark: '#D98A22', light: '#FCEBD1' },
+          danger: { DEFAULT: '#D9483F', light: '#FBE4E2' },
+          success: { DEFAULT: '#3FA34D', light: '#E4F5E7' },
+          ink: '#1B2420', muted: '#6B7770', hairline: '#E4E7E0',
+        },
+        fontFamily: { display: ['Kanit', 'sans-serif'], body: ['Sarabun', 'sans-serif'] },
+        borderRadius: { '2xl': '1.25rem', '3xl': '1.75rem' },
+      }
+    }
+  }
+</script>
+<style>
+  * { -webkit-tap-highlight-color: transparent; }
+  body { font-family: 'Sarabun', sans-serif; background: #F5F7F1; color: #1B2420; padding-bottom: env(safe-area-inset-bottom); }
+  .font-display { font-family: 'Kanit', sans-serif; }
+  .tnum { font-variant-numeric: tabular-nums; }
+  .press { transition: transform .1s ease, opacity .1s ease; }
+  .press:active { transform: scale(0.95); opacity: .8; }
+  .pop-in { animation: popIn .3s cubic-bezier(.34,1.56,.64,1) both; }
+  @keyframes popIn { 0% { opacity:0; transform: translateY(4px);} 100% { opacity:1; transform: none;} }
+  /* toast */
+  #toast-wrap { position: fixed; top: 12px; left: 0; right: 0; z-index: 60; display:flex; flex-direction:column; align-items:center; gap:8px; pointer-events:none; }
+  .toast { pointer-events:auto; animation: toastIn .3s cubic-bezier(.22,.9,.32,1) both; }
+  @keyframes toastIn { from { opacity:0; transform: translateY(-16px) scale(.96);} to { opacity:1; transform:none; } }
+  .toast.out { animation: toastOut .2s ease forwards; }
+  @keyframes toastOut { to { opacity:0; transform: translateY(-10px) scale(.97); } }
+  .shimmer { background: linear-gradient(90deg, #ECEFE8 25%, #F5F7F1 37%, #ECEFE8 63%); background-size: 400% 100%; animation: shimmer 1.4s ease infinite; }
+  @keyframes shimmer { 0% { background-position: 100% 0; } 100% { background-position: 0 0; } }
+</style>
+</head>
+<body class="antialiased max-w-md mx-auto min-h-screen flex flex-col">
+
+<div id="toast-wrap"></div>
+
+<header class="sticky top-0 z-40 bg-bg/90 backdrop-blur border-b border-hairline px-4 h-14 flex items-center gap-3">
+  <button onclick="window.location.href='index.html'" class="press w-9 h-9 flex items-center justify-center bg-surface border border-hairline rounded-full shadow-sm text-ink">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
+  </button>
+  <h1 class="font-display text-[17px] font-semibold">ระบบตรวจสอบจุดวางสินค้า</h1>
+</header>
+
+<main id="app" class="p-4 space-y-4">
+  <div class="shimmer h-32 rounded-2xl w-full"></div>
+  <div class="shimmer h-32 rounded-2xl w-full"></div>
+</main>
+
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+// ใส่ค่า URL และ KEY ให้เหมือนไฟล์หลัก
+    const SUPABASE_URL = 'https://dfemavcrzpmmgqqjrxvz.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRmZW1hdmNyenBtbWdxcWpyeHZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU2ODY4NTEsImV4cCI6MjEwMTI2Mjg1MX0.JYsRkjRwbAqKxqB9MT5iMDOeh5zh087sWmKo_Jx1cbc';
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+function toast(msg, kind = 'info') {
+  const wrap = document.getElementById('toast-wrap');
+  const el = document.createElement('div');
+  const styles = { info: 'bg-ink text-white', success: 'bg-success text-white', error: 'bg-danger text-white' };
+  el.className = `toast ${styles[kind] || styles.info} text-sm font-medium px-4 py-2.5 rounded-full shadow-lg max-w-[90%] text-center`;
+  el.textContent = msg;
+  wrap.appendChild(el);
+  setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 250); }, 2600);
+}
+
+// โหลดข้อมูลทั้งหมดที่จำเป็น
+async function loadData() {
+  try {
+    const [
+      { data: products },
+      { data: batches },
+      { data: productShelves },
+      { data: shelves },
+      { data: buildings }
+    ] = await Promise.all([
+      supabase.from('products').select('*').order('name'),
+      supabase.from('stock_batches').select('*'),
+      supabase.from('product_shelves').select('*'),
+      supabase.from('shelves').select('*'),
+      supabase.from('buildings').select('*')
+    ]);
+
+    // จัดกลุ่มข้อมูล
+    const shelvesMap = {};
+    shelves.forEach(s => {
+      const b = buildings.find(x => x.id === s.building_id);
+      shelvesMap[s.id] = { ...s, building_name: b ? b.name : 'ไม่ระบุตึก' };
+    });
+
+    const bldOpts = buildings.map(b => `<option value="${b.id}">${b.name}</option>`).join('');
+
+    const html = products.map((p, i) => {
+      // 1. คำนวณสต็อกทั้งหมดที่ซื้อมา
+      const pBatches = batches.filter(b => b.product_id === p.id);
+      const totalStock = pBatches.reduce((sum, b) => sum + b.remaining_qty, 0);
+
+      // 2. คำนวณของที่ถูกวางบนชั้นไปแล้ว
+      const pLocations = productShelves.filter(ps => ps.product_id === p.id);
+      const assignedStock = pLocations.reduce((sum, loc) => sum + loc.quantity, 0);
+      
+      // 3. คงเหลือที่ยังไม่ได้วาง
+      const unassigned = totalStock - assignedStock;
+      
+      const isComplete = unassigned === 0;
+
+      return `
+        <div class="bg-surface border border-hairline rounded-3xl p-4 shadow-sm pop-in" style="animation-delay: ${i*40}ms">
+          <div class="flex items-start justify-between mb-3 border-b border-hairline pb-3">
+            <div class="min-w-0 pr-2">
+              <h2 class="font-display font-semibold text-lg truncate">${p.name}</h2>
+              <p class="text-xs text-muted mt-0.5">มีในระบบทั้งหมด <span class="font-medium text-ink">${totalStock}</span> ชิ้น</p>
+            </div>
+            <div class="shrink-0 text-right">
+              <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg ${isComplete ? 'bg-success-light text-success' : 'bg-accent-light text-accent-dark'}">
+                <span class="text-[10px] font-medium">${isComplete ? 'จัดวางครบแล้ว' : 'ยังไม่จัดวาง'}</span>
+                <span class="font-display font-semibold text-sm tnum">${unassigned}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- รายการชั้นวางปัจจุบัน -->
+          <div class="space-y-2 mb-4">
+            ${pLocations.length === 0 ? `<p class="text-xs text-muted text-center py-2 bg-bg rounded-xl">ยังไม่มีการจัดวางบนชั้น</p>` : ''}
+            ${pLocations.map(loc => {
+              const sInfo = shelvesMap[loc.shelf_id];
+              return `
+                <div class="flex items-center gap-2 bg-bg border border-hairline rounded-xl p-2 pl-3">
+                  <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium truncate">${sInfo.building_name}</p>
+                    <p class="text-xs text-muted">ชั้น ${sInfo.floor}</p>
+                  </div>
+                  <input id="qty-${loc.id}" type="number" value="${loc.quantity}" class="w-16 text-center text-sm font-display font-semibold bg-surface border border-hairline rounded-lg py-1.5 outline-none focus:border-primary">
+                  <button onclick="updateQty('${loc.id}', '${loc.shelf_id}', '${p.id}')" class="press w-8 h-8 rounded-lg bg-primary-light text-primary flex items-center justify-center">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6 9 17l-5-5"/></svg>
+                  </button>
+                  <button onclick="removeLoc('${loc.id}')" class="press w-8 h-8 rounded-lg bg-danger-light text-danger flex items-center justify-center">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                  </button>
+                </div>
+              `;
+            }).join('')}
+          </div>
+
+          <!-- ฟอร์มเพิ่มเข้าชั้นใหม่ -->
+          ${unassigned > 0 ? `
+            <div class="pt-3 border-t border-hairline border-dashed">
+              <p class="text-[11px] font-medium text-primary mb-2 flex items-center gap-1">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg> จัดวางเพิ่ม (ว่าง ${unassigned} ชิ้น)
+              </p>
+              <div class="flex gap-1.5">
+                <select id="bld-${p.id}" onchange="loadShelves('${p.id}', this.value)" class="flex-1 text-xs bg-bg rounded-lg px-2 py-2 outline-none border border-hairline">
+                  <option value="" disabled selected>เลือกตึก</option>
+                  ${bldOpts}
+                </select>
+                <select id="shlf-${p.id}" class="flex-1 text-xs bg-bg rounded-lg px-2 py-2 outline-none border border-hairline" disabled>
+                  <option>รอเลือกตึก</option>
+                </select>
+                <input id="addqty-${p.id}" type="number" placeholder="จำนวน" class="w-16 text-center text-xs bg-bg border border-hairline rounded-lg outline-none">
+                <button onclick="addToNewShelf('${p.id}')" class="press px-3 bg-ink text-white text-xs font-medium rounded-lg">เพิ่ม</button>
+              </div>
+            </div>
+          ` : ''}
+        </div>
+      `;
+    }).join('');
+
+    document.getElementById('app').innerHTML = html || '<p class="text-center text-muted mt-10">ไม่พบข้อมูลสินค้า</p>';
+    
+    // เก็บข้อมูลชั้นวางไว้ใช้ตอนเลือก Dropdown
+    window._allShelves = shelves; 
+
+  } catch (err) {
+    document.getElementById('app').innerHTML = `<p class="text-danger text-center mt-10">โหลดข้อมูลล้มเหลว</p>`;
+    toast(err.message, 'error');
+  }
+}
+
+// ---------------- Functions สำหรับ UI ----------------
+
+window.loadShelves = (productId, buildingId) => {
+  const shelves = window._allShelves.filter(s => s.building_id === buildingId);
+  const sel = document.getElementById(`shlf-${productId}`);
+  sel.innerHTML = '<option value="" disabled selected>เลือกชั้น</option>' + 
+                  shelves.map(s => `<option value="${s.id}">ชั้น ${s.floor}</option>`).join('');
+  sel.disabled = false;
+};
+
+// อัปเดตตัวเลข
+window.updateQty = async (rowId, shelfId, productId) => {
+  const val = parseInt(document.getElementById(`qty-${rowId}`).value, 10);
+  if (isNaN(val) || val < 0) return toast('ใส่ตัวเลขให้ถูกต้อง', 'error');
+  try {
+    // ใช้ RPC assign_product_to_shelf ตัวใหม่ที่เราทำไว้ เพื่อให้มันเช็คลิมิตว่าห้ามเกินของที่มี
+    const { error } = await supabase.rpc('assign_product_to_shelf', {
+      p_shelf_id: shelfId, p_product_id: productId, p_qty: val
+    });
+    if (error) throw error;
+    toast('อัปเดตจำนวนสำเร็จ', 'success');
+    loadData(); // รีเฟรชหน้า
+  } catch (err) { toast(err.message, 'error'); }
+};
+
+// ลบของออกจากชั้น
+window.removeLoc = async (rowId) => {
+  if(!confirm('ดึงสินค้าออกจากชั้นวางนี้ทั้งหมดใช่หรือไม่? (สินค้าจะกลับไปอยู่ในสถานะยังไม่จัดวาง)')) return;
+  try {
+    const { error } = await supabase.from('product_shelves').delete().eq('id', rowId);
+    if (error) throw error;
+    toast('ดึงสินค้าออกจากชั้นสำเร็จ', 'success');
+    loadData();
+  } catch (err) { toast(err.message, 'error'); }
+};
+
+// จัดวางเพิ่มในชั้นใหม่
+window.addToNewShelf = async (productId) => {
+  const shelfId = document.getElementById(`shlf-${productId}`).value;
+  const qty = parseInt(document.getElementById(`addqty-${productId}`).value, 10);
+  
+  if (!shelfId) return toast('กรุณาเลือกตึกและชั้น', 'error');
+  if (!qty || qty <= 0) return toast('กรุณาใส่จำนวน', 'error');
+
+  try {
+    const { error } = await supabase.rpc('assign_product_to_shelf', {
+      p_shelf_id: shelfId, p_product_id: productId, p_qty: qty
+    });
+    if (error) throw error;
+    toast('จัดวางเข้าชั้นใหม่สำเร็จ ✓', 'success');
+    loadData();
+  } catch (err) { toast(err.message, 'error'); }
+};
+
+// โหลดครั้งแรก
+loadData();
+</script>
+</body>
+</html>
