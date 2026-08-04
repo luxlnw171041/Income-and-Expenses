@@ -693,14 +693,19 @@ const { data: batches, error: bErr } = await supabase
     /* ============================================================
        6) ROUTER
        ============================================================ */
-    const app = document.getElementById('app');
+  const app = document.getElementById('app');
     let currentRoute = 'dashboard';
     let routeState = {};
 
     const routes = { dashboard: renderDashboard, count: renderCount, finance: renderFinance, inventory: renderInventory, calculator: renderCalculator, accounts: renderAccounts, analytics: renderAnalytics };
 
-    function go(route, state = {}) {
+    // เพิ่มพารามิเตอร์ push = true เพื่อจัดการ History
+    function go(route, state = {}, push = true) {
       currentRoute = route; routeState = state;
+      
+      // บันทึกหน้าปัจจุบันลง History ของ Browser
+      if (push) history.pushState({ route, state }, '', `#${route}`);
+      
       document.querySelectorAll('.navbtn').forEach(b => b.classList.toggle('active', b.dataset.route === route));
       app.innerHTML = '';
       const wrap = document.createElement('div');
@@ -709,7 +714,17 @@ const { data: batches, error: bErr } = await supabase
       routes[route](wrap, state);
       window.scrollTo({ top: 0 });
     }
-    function refreshCurrentRoute() { go(currentRoute, routeState); }
+    
+    function refreshCurrentRoute() { go(currentRoute, routeState, false); }
+
+    // ดักจับ Event เมื่อผู้ใช้กดปุ่ม Back ของมือถือ/เบราว์เซอร์
+    window.addEventListener('popstate', (e) => {
+      if (e.state && e.state.route) {
+        go(e.state.route, e.state.state, false);
+      } else {
+        go('dashboard', {}, false);
+      }
+    });
 
     document.querySelectorAll('.navbtn[data-route]').forEach(btn => {
       btn.addEventListener('click', () => go(btn.dataset.route));
@@ -1497,6 +1512,7 @@ const { data: batches, error: bErr } = await supabase
           });
 
           // ดึงข้อมูลแก้ไข
+        // ดึงข้อมูลแก้ไข
           txListEl.querySelectorAll('[data-tx-edit]').forEach(el => {
             el.onclick = () => {
               const t = txs.find(x => x.id === el.dataset.txEdit);
@@ -1510,26 +1526,39 @@ const { data: batches, error: bErr } = await supabase
 
               const saveBtn = root.querySelector('#tx-save');
               saveBtn.textContent = 'บันทึกการแก้ไข';
+              
+              // เช็คและลบปุ่มยกเลิกเก่าออกก่อน (กันมันงอกซ้ำ)
+              if (saveBtn.nextElementSibling?.id === 'tx-cancel') {
+                saveBtn.nextElementSibling.remove();
+              }
+              
+              // สร้างและแทรกปุ่ม "ยกเลิก"
+              const cancelBtn = document.createElement('button');
+              cancelBtn.id = 'tx-cancel';
+              cancelBtn.className = 'press w-full bg-hairline text-ink font-display font-medium py-3.5 rounded-2xl mt-3 transition-colors';
+              cancelBtn.textContent = 'ยกเลิกการแก้ไข';
+              cancelBtn.onclick = () => go('finance'); // กดปุ๊บ รีเฟรชหน้าให้ฟอร์มกลับเป็นปกติ
+              saveBtn.after(cancelBtn);
+
               saveBtn.onclick = async () => {
                 const amount = parseFloat(root.querySelector('#tx-amount').value);
                 const category = root.querySelector('#tx-category').value.trim();
                 const note = root.querySelector('#tx-note').value.trim();
 
                 if (!amount || amount <= 0 || !category) return toast('กรอกข้อมูลให้ถูกต้อง', 'error');
+                
+                if (saveBtn.disabled) return;
+                saveBtn.disabled = true;
 
                 try {
                   await DB.updateTransaction({
-                    id: t.id,
-                    account_id: selectedAccount,
-                    type: txType,
-                    category,
-                    amount,
-                    note
+                    id: t.id, account_id: selectedAccount, type: txType, category, amount, note
                   });
                   toast('แก้ไขรายการสำเร็จ ✓', 'success');
                   go('finance');
                 } catch (err) {
                   toast('แก้ไขไม่สำเร็จ: ' + err.message, 'error');
+                  saveBtn.disabled = false;
                 }
               };
 
@@ -1999,8 +2028,11 @@ const { data: batches, error: bErr } = await supabase
 
           const shelfId = body.querySelector('#a-shelf').value;
           const productId = body.querySelector('#a-product').value;
-          const qty = parseInt(body.querySelector('#a-qty').value, 10) || 0;
+          const qty = parseInt(body.querySelector('#a-qty').value, 10);
+
           if (!shelfId) return toast('ไม่มีชั้นให้เลือก', 'error');
+          // ดักจับกรณีผู้ใช้ไม่กรอก หรือกรอกเลข 0, ติดลบ
+          if (Number.isNaN(qty) || qty <= 0) return toast('กรุณาใส่จำนวนที่มากกว่า 0', 'error');
 
           btn.disabled = true;
           try {
