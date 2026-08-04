@@ -1,4 +1,4 @@
-const CACHE_NAME = 'Taii-shop-v3.6'; //
+const CACHE_NAME = 'Taii-shop-v3.7'; //
 const SHELL_FILES = ['./', './index.html', './manifest.json']; //[cite: 2]
 
 self.addEventListener('install', (event) => {
