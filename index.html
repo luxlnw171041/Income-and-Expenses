@@ -596,6 +596,41 @@
         if (error) throw error;
         return data;
       },
+      async getReconciliationData() {
+    // 1. ดึงเวลาปิดยอดล่าสุด
+    const { data: settings } = await supabase.from('shop_settings').select('last_reconciled_at').eq('id', 1).single();
+    const lastReconciled = settings?.last_reconciled_at || new Date(0).toISOString();
+
+    // 2. ดึงรวมมูลค่า "ของหายที่ยังไม่เคลียร์" (คำนวณจากราคาขาย)
+    const { data: discrepancies } = await supabase.from('stock_discrepancies')
+      .select('value_at_selling_price')
+      .is('resolved_as', null)
+      .lt('diff_qty', 0); // เอาเฉพาะที่ติดลบ (ของหาย)
+    const totalLostValue = discrepancies ? discrepancies.reduce((s, row) => s + row.value_at_selling_price, 0) : 0;
+
+    // 3. ดึงรวม "รายรับของร้านค้า" ตั้งแต่ปิดยอดรอบที่แล้ว (ไม่นับ 'เงินทุน/เงินทอน')
+    const accounts = await this.getAccounts();
+    const businessAccIds = accounts.filter(a => a.type === 'business').map(a => a.id);
+    
+    const { data: incomeTxs } = await supabase.from('transactions')
+      .select('amount')
+      .in('account_id', businessAccIds)
+      .eq('type', 'income')
+      .neq('category', 'เงินทุน/เงินทอน')
+      .gt('created_at', lastReconciled);
+    const totalActualIncome = incomeTxs ? incomeTxs.reduce((s, row) => s + row.amount, 0) : 0;
+
+    return { 
+      lastReconciled, 
+      expectedSales: totalLostValue, 
+      actualIncome: totalActualIncome,
+      unexplainedDiff: totalLostValue - totalActualIncome 
+    };
+  },
+  async closeReconciliationRound() {
+    const { error } = await supabase.rpc('close_reconciliation_round');
+    if (error) throw error;
+  },
       // เพิ่มต่อท้ายใน DB object
       async deleteTransaction(txId) {
         const { data, error } = await supabase.rpc('delete_transaction', { p_tx_id: txId });
@@ -704,6 +739,15 @@
             <div class="text-xs text-white/80">ดูจำนวนรวม เพิ่ม/ลด/ย้าย ตำแหน่งชั้นวาง</div>
           </div>
         </button>
+        <button onclick="window.location.href='sales_report.html'" class="press col-span-2 bg-success text-white rounded-2xl p-4 flex items-center gap-3 shadow-sm">
+          <div class="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>
+          </div>
+          <div class="text-left">
+            <div class="font-display font-medium text-sm">รายงานการขาย & สินค้าออก</div>
+            <div class="text-xs text-white/80">สรุปยอดขาย, กำไรสูงสุด, ตึกขายดี</div>
+          </div>
+        </button>
         <button id="qa-calc" class="press col-span-2 bg-surface border border-hairline rounded-2xl p-4 flex items-center gap-3 shadow-sm">
           <div class="w-9 h-9 rounded-xl bg-primary-light flex items-center justify-center text-primary shrink-0">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8M8 10h.01M12 10h.01M16 10h.01M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01M16 18h.01"/></svg>
@@ -737,26 +781,63 @@
       root.querySelector('#qa-analytics').onclick = () => go('analytics');
 
       try {
-        const [overview, alerts] = await Promise.all([DB.getDashboardOverview(), DB.getLowStockAlerts()]);
-        const cards = [
-          { label: 'ยอดขายรวม', value: overview.total_sales, color: 'text-primary', icon: 'sale' },
-          { label: 'กำไรสุทธิ', value: overview.net_profit ?? (overview.total_sales - overview.total_expenses), color: overview.net_profit >= 0 ? 'text-success' : 'text-danger', icon: 'profit' },
-          { label: 'รายจ่ายรวม', value: overview.total_expenses, color: 'text-ink', icon: 'expense' },
-          { label: 'มูลค่าสูญหาย', value: overview.total_loss_value, color: 'text-danger', icon: 'loss' },
-        ];
-        root.querySelector('#dash-cards').innerHTML = cards.map((c, i) => `
+    // ดึงข้อมูล 3 อย่างพร้อมกัน (แดชบอร์ด, ของใกล้หมด, ข้อมูลกระทบยอด)
+    const [overview, alerts, reconData] = await Promise.all([
+      DB.getDashboardOverview(), 
+      DB.getLowStockAlerts(),
+      DB.getReconciliationData()
+    ]);
+
+    const cards = [
+      { label: 'ยอดขายรวม', value: overview.total_sales, color: 'text-primary', icon: 'sale' },
+      { label: 'กำไรสุทธิ', value: overview.net_profit ?? (overview.total_sales - overview.total_expenses), color: overview.net_profit >= 0 ? 'text-success' : 'text-danger', icon: 'profit' },
+      { label: 'รายจ่ายรวม', value: overview.total_expenses, color: 'text-ink', icon: 'expense' },
+      { label: 'มูลค่าต้นทุนสูญหาย', value: overview.total_loss_value, color: 'text-danger', icon: 'loss' },
+    ];
+    root.querySelector('#dash-cards').innerHTML = cards.map((c, i) => `
       <div class="bg-surface rounded-2xl p-4 border border-hairline pop-in" style="animation-delay:${i * 60}ms">
         <p class="text-xs text-muted mb-1">${c.label}</p>
         <p class="font-display font-semibold text-xl tnum ${c.color}">฿${fmtMoney(c.value)}</p>
       </div>
     `).join('');
 
-        const alertsHtml = alerts.length === 0
-          ? `<div class="bg-primary-light rounded-2xl p-4 text-sm text-primary flex items-center gap-2">
-           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
-           สต็อกทุกจุดยังปกติดี
+    // --- ส่วนที่ทำเพิ่ม: กล่องเตือนปิดยอด (Reconciliation Warning) ---
+    let reconHtml = '';
+    // ถ้ามีส่วนต่างที่หาคำอธิบายไม่ได้ และยอดมากกว่า 0
+    if (reconData.unexplainedDiff > 0) {
+      reconHtml = `
+        <div class="bg-danger-light border border-danger/20 rounded-2xl p-4 mb-4 shadow-sm pop-in">
+          <div class="flex items-start justify-between mb-2">
+            <div>
+              <p class="font-display font-medium text-sm text-danger flex items-center gap-1.5">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                พบส่วนต่างที่ยังไม่ได้อธิบาย
+              </p>
+              <p class="text-[11px] text-danger/70 mt-0.5">ยอดของหาย (ขาย) - รายรับที่บันทึกแล้ว</p>
+            </div>
+            <p class="font-display font-semibold text-xl tnum text-danger">฿${fmtMoney(reconData.unexplainedDiff)}</p>
+          </div>
+          <div class="flex items-center gap-2 mt-3">
+            <div class="flex-1 bg-white/50 rounded-lg p-2 text-center border border-danger/10">
+              <p class="text-[10px] text-muted">ควรขายได้ (หาย)</p>
+              <p class="font-display font-medium text-sm tnum">฿${fmtMoney(reconData.expectedSales)}</p>
+            </div>
+            <div class="flex-1 bg-white/50 rounded-lg p-2 text-center border border-danger/10">
+              <p class="text-[10px] text-muted">รับเงินจริง</p>
+              <p class="font-display font-medium text-sm tnum">฿${fmtMoney(reconData.actualIncome)}</p>
+            </div>
+          </div>
+          <button id="btn-close-round" class="press w-full mt-3 bg-danger text-white py-2 rounded-xl text-xs font-medium">ยืนยันการปิดยอดรอบนี้ (Reset)</button>
+        </div>
+      `;
+    }
+
+    // กล่องแจ้งเตือนของใกล้หมด
+    const alertsHtml = alerts.length === 0
+      ? `<div class="bg-primary-light rounded-2xl p-4 text-sm text-primary flex items-center gap-2 mb-4">
+           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg> สต็อกทุกจุดยังปกติดี
          </div>`
-          : `<div class="bg-surface rounded-2xl border border-hairline overflow-hidden">
+      : `<div class="bg-surface rounded-2xl border border-hairline overflow-hidden mb-4">
           <div class="px-4 pt-3 pb-2 flex items-center justify-between">
             <h3 class="font-display font-semibold text-sm">⚠️ สินค้าใกล้หมด (${alerts.length})</h3>
           </div>
@@ -772,11 +853,31 @@
             `).join('')}
           </div>
         </div>`;
-        root.querySelector('#dash-alerts').innerHTML = alertsHtml;
-      } catch (e) {
-        console.error(e);
-        toast('โหลดข้อมูลไม่สำเร็จ: ' + e.message, 'error');
-      }
+    
+    root.querySelector('#dash-alerts').innerHTML = reconHtml + alertsHtml;
+
+    // ผูก Event ปุ่มปิดยอด (ถ้ายอดส่วนต่าง > 0)
+    const closeRoundBtn = root.querySelector('#btn-close-round');
+    if (closeRoundBtn) {
+      closeRoundBtn.onclick = async () => {
+        if (!confirm('ยืนยันการปิดยอดรอบนี้?\n\nระบบจะเริ่มนับส่วนต่างยอดขายใหม่จากศูนย์ (รายการของหายทั้งหมดจะถูกบันทึกเป็น Loss)')) return;
+        closeRoundBtn.disabled = true;
+        closeRoundBtn.textContent = 'กำลังปิดยอด...';
+        try {
+          await DB.closeReconciliationRound();
+          toast('ปิดยอดสำเร็จ ✓ เริ่มต้นรอบใหม่แล้ว', 'success');
+          go('dashboard'); // รีเฟรชหน้า
+        } catch (err) {
+          toast('เกิดข้อผิดพลาด: ' + err.message, 'error');
+          closeRoundBtn.disabled = false;
+        }
+      };
+    }
+
+  } catch (e) {
+    console.error(e);
+    toast('โหลดข้อมูลไม่สำเร็จ: ' + e.message, 'error');
+  }
     }
     /* ============================================================
        8) STOCK COUNTING (signature screen)

@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>รายงานการขาย & สินค้า</title>
+<meta name="theme-color" content="#145C52">
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;500;600;700&family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          bg: '#F5F7F1', surface: '#FFFFFF',
+          primary: { DEFAULT: '#145C52', dark: '#0E453D', light: '#E4EFEA' },
+          accent: { DEFAULT: '#F2A33C', dark: '#D98A22', light: '#FCEBD1' },
+          danger: { DEFAULT: '#D9483F', light: '#FBE4E2' },
+          success: { DEFAULT: '#3FA34D', light: '#E4F5E7' },
+          ink: '#1B2420', muted: '#6B7770', hairline: '#E4E7E0',
+        },
+        fontFamily: { display: ['Kanit', 'sans-serif'], body: ['Sarabun', 'sans-serif'] },
+        borderRadius: { '2xl': '1.25rem', '3xl': '1.75rem' },
+      }
+    }
+  }
+</script>
+<style>
+  * { -webkit-tap-highlight-color: transparent; }
+  body { font-family: 'Sarabun', sans-serif; background: #F5F7F1; color: #1B2420; padding-bottom: env(safe-area-inset-bottom); }
+  .font-display { font-family: 'Kanit', sans-serif; }
+  .tnum { font-variant-numeric: tabular-nums; }
+  .press { transition: transform .1s ease, opacity .1s ease; }
+  .press:active { transform: scale(0.95); opacity: .8; }
+  .pop-in { animation: popIn .3s cubic-bezier(.34,1.56,.64,1) both; }
+  @keyframes popIn { 0% { opacity:0; transform: translateY(4px);} 100% { opacity:1; transform: none;} }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+</style>
+</head>
+<body class="antialiased max-w-md mx-auto min-h-screen flex flex-col">
+
+<header class="sticky top-0 z-40 bg-bg/90 backdrop-blur border-b border-hairline px-4 pt-4 pb-3 space-y-3">
+  <div class="flex items-center gap-3">
+    <button onclick="window.location.href='index.html'" class="press w-9 h-9 flex items-center justify-center bg-surface border border-hairline rounded-full shadow-sm text-ink">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
+    </button>
+    <h1 class="font-display text-[17px] font-semibold">สรุปการขาย & สินค้าออก</h1>
+  </div>
+  
+  <!-- ตัวกรองเวลา -->
+  <div class="flex gap-2 overflow-x-auto no-scrollbar pb-1" id="filter-time">
+    <button data-time="today" class="press whitespace-nowrap text-xs font-medium px-4 py-2 rounded-full bg-surface border border-hairline text-muted">วันนี้</button>
+    <button data-time="week" class="press whitespace-nowrap text-xs font-medium px-4 py-2 rounded-full bg-surface border border-hairline text-muted">อาทิตย์นี้</button>
+    <button data-time="month" class="press whitespace-nowrap text-xs font-medium px-4 py-2 rounded-full bg-ink text-white">เดือนนี้</button>
+    <button data-time="year" class="press whitespace-nowrap text-xs font-medium px-4 py-2 rounded-full bg-surface border border-hairline text-muted">ปีนี้</button>
+    <button data-time="all" class="press whitespace-nowrap text-xs font-medium px-4 py-2 rounded-full bg-surface border border-hairline text-muted">ทั้งหมด</button>
+  </div>
+  
+  <!-- ตัวกรองตึก -->
+  <select id="filter-building" class="w-full text-sm bg-surface rounded-xl px-3 py-2.5 outline-none border border-hairline font-medium shadow-sm">
+    <option value="all">🏢 ดูรวมทุกตึก</option>
+  </select>
+</header>
+
+<main id="app" class="p-4 space-y-5">
+  <div class="text-center py-10 text-muted"><span class="animate-pulse">กำลังโหลดข้อมูล...</span></div>
+</main>
+
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+// ใส่ค่า URL และ KEY ให้เหมือนไฟล์หลัก
+const SUPABASE_URL = 'https://dfemavcrzpmmgqqjrxvz.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRmZW1hdmNyenBtbWdxcWpyeHZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU2ODY4NTEsImV4cCI6MjEwMTI2Mjg1MX0.JYsRkjRwbAqKxqB9MT5iMDOeh5zh087sWmKo_Jx1cbc';
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+function fmtMoney(n) { return Number(n || 0).toLocaleString('th-TH', { minimumFractionDigits: 0, maximumFractionDigits: 2 }); }
+
+let allData = [];
+let allBuildings = [];
+let allProducts = {};
+let allShelves = {};
+
+let currentTimeFilter = 'month';
+let currentBuildingFilter = 'all';
+
+async function init() {
+  try {
+    // 1. ดึงข้อมูลตึก, ชั้น, สินค้า
+    const [{ data: blds }, { data: shlfs }, { data: prods }, { data: pShlfs }] = await Promise.all([
+      supabase.from('buildings').select('*'),
+      supabase.from('shelves').select('*'),
+      supabase.from('products').select('*'),
+      supabase.from('product_shelves').select('*')
+    ]);
+    
+    allBuildings = blds;
+    prods.forEach(p => allProducts[p.id] = p.name);
+    
+    // สร้าง Map ให้หาง่ายๆ ว่า ProductShelfID นี้อยู่ตึกไหน ชั้นไหน
+    const shelfMap = {};
+    shlfs.forEach(s => shelfMap[s.id] = s);
+    
+    const productShelfMap = {};
+    pShlfs.forEach(ps => {
+      const s = shelfMap[ps.shelf_id];
+      const b = blds.find(x => x.id === s?.building_id);
+      productShelfMap[ps.id] = { 
+        product_id: ps.product_id, 
+        building_id: b?.id, 
+        building_name: b?.name, 
+        floor: s?.floor 
+      };
+    });
+
+    // 2. ดึงข้อมูลของที่หาย (ถูกหยิบออก = ถือว่าขายได้)
+    const { data: discrepancies } = await supabase.from('stock_discrepancies')
+      .select('*')
+      .lt('diff_qty', 0) // เอาเฉพาะที่ของลดลง (ขาย/หาย)
+      .order('detected_at', { ascending: false });
+
+    // รวมข้อมูลให้เป็นก้อนเดียวกันเพื่อประมวลผลง่ายๆ
+    allData = discrepancies.map(d => {
+      const loc = productShelfMap[d.product_shelf_id] || {};
+      const qtyGone = Math.abs(d.diff_qty);
+      const profitPerUnit = d.selling_price - d.cost_price;
+      return {
+        ...d,
+        qty: qtyGone,
+        product_name: allProducts[loc.product_id] || 'สินค้าถูกลบ',
+        building_id: loc.building_id || 'unknown',
+        building_name: loc.building_name || 'ไม่ทราบตึก',
+        floor: loc.floor || '?',
+        total_profit: qtyGone * profitPerUnit,
+        total_sales: qtyGone * d.selling_price
+      };
+    });
+
+    // ใส่ตัวเลือกตึก
+    const bldSelect = document.getElementById('filter-building');
+    allBuildings.forEach(b => {
+      const opt = document.createElement('option');
+      opt.value = b.id; opt.textContent = `🏢 เฉพาะ: ${b.name}`;
+      bldSelect.appendChild(opt);
+    });
+
+    bindEvents();
+    render();
+  } catch (err) {
+    document.getElementById('app').innerHTML = `<p class="text-danger text-center mt-10">โหลดข้อมูลล้มเหลว: ${err.message}</p>`;
+  }
+}
+
+function bindEvents() {
+  document.querySelectorAll('#filter-time button').forEach(btn => {
+    btn.onclick = () => {
+      document.querySelectorAll('#filter-time button').forEach(b => b.className = "press whitespace-nowrap text-xs font-medium px-4 py-2 rounded-full bg-surface border border-hairline text-muted");
+      btn.className = "press whitespace-nowrap text-xs font-medium px-4 py-2 rounded-full bg-ink text-white";
+      currentTimeFilter = btn.dataset.time;
+      render();
+    };
+  });
+  document.getElementById('filter-building').onchange = (e) => {
+    currentBuildingFilter = e.target.value;
+    render();
+  };
+}
+
+function render() {
+  // 1. กรองข้อมูลตามเวลาและตึก
+  let filtered = allData.filter(d => {
+    if (currentBuildingFilter !== 'all' && d.building_id !== currentBuildingFilter) return false;
+    if (currentTimeFilter === 'all') return true;
+    
+    const date = new Date(d.detected_at);
+    const now = new Date();
+    
+    if (currentTimeFilter === 'today') {
+      return date.toDateString() === now.toDateString();
+    } else if (currentTimeFilter === 'week') {
+      const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay()));
+      startOfWeek.setHours(0,0,0,0);
+      return date >= startOfWeek;
+    } else if (currentTimeFilter === 'month') {
+      return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
+    } else if (currentTimeFilter === 'year') {
+      return date.getFullYear() === now.getFullYear();
+    }
+    return true;
+  });
+
+  // 2. คำนวณสรุป
+  const sumQty = filtered.reduce((s, x) => s + x.qty, 0);
+  const sumSales = filtered.reduce((s, x) => s + x.total_sales, 0);
+  const sumProfit = filtered.reduce((s, x) => s + x.total_profit, 0);
+
+  // 3. จัดอันดับ/รวบรวมสินค้าขายดี
+  const productStats = {};
+  filtered.forEach(d => {
+    if(!productStats[d.product_name]) productStats[d.product_name] = { name: d.product_name, qty: 0, profit: 0, sales: 0 };
+    productStats[d.product_name].qty += d.qty;
+    productStats[d.product_name].profit += d.total_profit;
+    productStats[d.product_name].sales += d.total_sales;
+  });
+  const topProducts = Object.values(productStats).sort((a, b) => b.qty - a.qty).slice(0, 5);
+  const topProfitProducts = Object.values(productStats).sort((a, b) => b.profit - a.profit).slice(0, 5);
+  
+  // 🟢 ข้อมูลใหม่: รายการสินค้าทั้งหมดเรียงตามจำนวน
+  const allSoldList = Object.values(productStats).sort((a, b) => b.qty - a.qty);
+  
+  // 🔴 ข้อมูลใหม่: กรองเฉพาะของที่ระบุสาเหตุว่าพัง/หมดอายุ/ใช้เอง (ไม่นับ 'สูญหาย/ไม่ทราบสาเหตุ')
+  const knownLosses = filtered.filter(d => d.note && d.note !== 'สูญหาย/ไม่ทราบสาเหตุ' && d.note !== 'null' && d.note.trim() !== '');
+
+  // 4. จัดอันดับทำเล
+  const locStats = {};
+  filtered.forEach(d => {
+    const locKey = `${d.building_name} (ชั้น ${d.floor})`;
+    if(!locStats[locKey]) locStats[locKey] = { name: locKey, qty: 0, sales: 0 };
+    locStats[locKey].qty += d.qty;
+    locStats[locKey].sales += d.total_sales;
+  });
+  const topLocs = Object.values(locStats).sort((a, b) => b.sales - a.sales).slice(0, 5);
+
+  // 5. สร้าง HTML
+  const root = document.getElementById('app');
+  
+  if (filtered.length === 0) {
+    root.innerHTML = `<div class="text-center py-12 bg-surface rounded-3xl border border-dashed border-hairline"><p class="text-muted">ไม่มีข้อมูลในช่วงเวลานี้</p></div>`;
+    return;
+  }
+
+  root.innerHTML = `
+    <!-- สรุปภาพรวม -->
+    <div class="bg-primary text-white rounded-3xl p-5 shadow-lg relative overflow-hidden pop-in">
+      <p class="text-white/80 text-xs mb-1">มูลค่าสินค้าที่ถูกหยิบออก (คาดการณ์ยอดขาย)</p>
+      <p class="font-display font-semibold text-3xl tnum mb-4">฿${fmtMoney(sumSales)}</p>
+      <div class="grid grid-cols-2 gap-4 border-t border-white/20 pt-3">
+        <div>
+          <p class="text-[10px] text-white/70">จำนวนชิ้นรวม</p>
+          <p class="font-display font-medium text-lg tnum">${fmtMoney(sumQty)} ชิ้น</p>
+        </div>
+        <div>
+          <p class="text-[10px] text-white/70">กำไรคาดการณ์</p>
+          <p class="font-display font-medium text-lg text-success-light tnum">+฿${fmtMoney(sumProfit)}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- อันดับ 1: สินค้าขายดี (Top 5) -->
+    <div class="pop-in" style="animation-delay: 50ms">
+      <h2 class="font-display font-semibold text-sm mb-2 mt-4 flex items-center gap-1.5"><span class="text-lg">🔥</span> สินค้าขายดี Top 5 (จำนวนชิ้น)</h2>
+      <div class="bg-surface rounded-2xl border border-hairline p-1 divide-y divide-hairline">
+        ${topProducts.map((p, i) => `
+          <div class="flex items-center justify-between p-3">
+            <div class="flex items-center gap-3">
+              <span class="font-display font-semibold text-muted text-sm w-4">${i+1}</span>
+              <p class="text-sm font-medium">${p.name}</p>
+            </div>
+            <p class="font-display font-semibold tnum text-primary">${fmtMoney(p.qty)} <span class="text-xs font-normal text-muted">ชิ้น</span></p>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+
+    <!-- อันดับ 2: สินค้าทำกำไรสูงสุด (Top 5) -->
+    <div class="pop-in" style="animation-delay: 100ms">
+      <h2 class="font-display font-semibold text-sm mb-2 mt-4 flex items-center gap-1.5"><span class="text-lg">💰</span> สินค้าทำกำไรสูงสุด Top 5</h2>
+      <div class="bg-surface rounded-2xl border border-hairline p-1 divide-y divide-hairline">
+        ${topProfitProducts.map((p, i) => `
+          <div class="flex items-center justify-between p-3">
+            <div class="flex items-center gap-3 min-w-0">
+              <span class="font-display font-semibold text-muted text-sm w-4 shrink-0">${i+1}</span>
+              <p class="text-sm font-medium truncate">${p.name}</p>
+            </div>
+            <p class="font-display font-semibold tnum text-success shrink-0">+฿${fmtMoney(p.profit)}</p>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+
+    <!-- อันดับ 3: ทำเลทอง -->
+    ${currentBuildingFilter === 'all' ? `
+    <div class="pop-in" style="animation-delay: 150ms">
+      <h2 class="font-display font-semibold text-sm mb-2 mt-4 flex items-center gap-1.5"><span class="text-lg">📍</span> จุดวางที่ทำยอดได้สูงสุด Top 5</h2>
+      <div class="bg-surface rounded-2xl border border-hairline p-1 divide-y divide-hairline">
+        ${topLocs.map((l, i) => `
+          <div class="flex items-center justify-between p-3">
+            <div class="flex items-center gap-3">
+              <span class="font-display font-semibold text-muted text-sm w-4">${i+1}</span>
+              <p class="text-sm font-medium">${l.name}</p>
+            </div>
+            <div class="text-right">
+              <p class="font-display font-semibold tnum text-ink">฿${fmtMoney(l.sales)}</p>
+              <p class="text-[10px] text-muted">${fmtMoney(l.qty)} ชิ้น</p>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    </div>` : ''}
+
+    <!-- 🟢 เพิ่มใหม่: รายการสินค้าทั้งหมดที่ขายได้ 🟢 -->
+    <div class="pop-in" style="animation-delay: 200ms">
+      <h2 class="font-display font-semibold text-sm mb-2 mt-6 flex items-center gap-1.5"><span class="text-lg">📦</span> รายการสินค้าทั้งหมดที่ขายได้ (หยิบออก)</h2>
+      <div class="bg-surface rounded-2xl border border-hairline p-1 divide-y divide-hairline">
+        ${allSoldList.map((p) => `
+          <div class="flex items-center justify-between p-3">
+            <div>
+              <p class="text-sm font-medium">${p.name}</p>
+              <p class="text-[11px] text-muted">ยอดรวม ฿${fmtMoney(p.sales)} (กำไร +฿${fmtMoney(p.profit)})</p>
+            </div>
+            <p class="font-display font-semibold tnum text-ink">${fmtMoney(p.qty)} <span class="text-[10px] font-normal text-muted">ชิ้น</span></p>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+
+    <!-- 🔴 เพิ่มใหม่: รายการของหาย/ชำรุด ที่ระบุสาเหตุ 🔴 -->
+    ${knownLosses.length > 0 ? `
+    <div class="pop-in" style="animation-delay: 250ms">
+      <h2 class="font-display font-semibold text-sm mb-2 mt-6 flex items-center gap-1.5"><span class="text-lg">⚠️</span> สินค้าชำรุด / หมดอายุ / นำไปใช้เอง</h2>
+      <div class="bg-danger-light/30 rounded-2xl border border-danger/20 p-1 divide-y divide-danger/10">
+        ${knownLosses.map((l) => `
+          <div class="flex items-center justify-between p-3">
+            <div>
+              <p class="text-sm font-medium text-danger-dark">${l.product_name}</p>
+              <p class="text-[10px] text-danger/70">${l.building_name} (ชั้น ${l.floor}) · สาเหตุ: ${l.note}</p>
+            </div>
+            <div class="text-right">
+              <p class="font-display font-semibold tnum text-danger">${l.qty} ชิ้น</p>
+              <p class="text-[10px] text-danger/70">เสียทุน -฿${fmtMoney(l.qty * l.cost_price)}</p>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+    ` : ''}
+  `;
+}
+init();
+</script>
+</body>
+</html>
