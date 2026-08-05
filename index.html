@@ -648,7 +648,7 @@ const { data: batches, error: bErr } = await supabase
     .select('amount')
     .in('account_id', businessAccIds)
     .eq('type', 'income')
-    .neq('category', 'เงินทุน/เงินทอน')
+    .not('category', 'in', '("เงินทุน/เงินทอน","รายได้อื่น")')
     .gt('created_at', lastReconciled);
     
   const totalActualIncome = incomeTxs ? incomeTxs.reduce((s, row) => s + row.amount, 0) : 0;
@@ -1191,7 +1191,7 @@ const { data: batches, error: bErr } = await supabase
       { label: 'ค่าหอพัก', type: 'expense', category: 'ค่าหอพัก' },
       { label: 'ค่าไฟ/น้ำ', type: 'expense', category: 'ค่าสาธารณูปโภค' },
       { label: 'ยอดขาย', type: 'income', category: 'ยอดขาย' },
-      { label: 'ซื้อสินค้าเข้าสต็อก', type: 'expense', category: 'ซื้อสินค้า' },
+      { label: 'รายได้อื่น (ค่าแรง)', type: 'income', category: 'รายได้อื่น' },
     ];
     function loadQuickCats() {
       try { const v = JSON.parse(localStorage.getItem(QUICK_CATS_KEY)); return Array.isArray(v) ? v : DEFAULT_QUICK_CATS; }

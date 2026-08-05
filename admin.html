@@ -73,9 +73,10 @@
   
   <!-- Tabs -->
   <div class="max-w-4xl mx-auto px-2 flex overflow-x-auto hide-scrollbar gap-1 pb-2">
-    <button data-tab="stock" class="tab-btn active font-display font-medium text-sm px-4 py-2 rounded-lg bg-white text-primary-dark whitespace-nowrap transition-colors">สต็อก & สินค้า</button>
+  <button data-tab="stock" class="tab-btn active font-display font-medium text-sm px-4 py-2 rounded-lg bg-white text-primary-dark whitespace-nowrap transition-colors">สต็อก & สินค้า</button>
     <button data-tab="shelves" class="tab-btn font-display font-medium text-sm px-4 py-2 rounded-lg text-white/80 hover:bg-white/10 whitespace-nowrap transition-colors">จุดวางสินค้า</button>
     <button data-tab="finance" class="tab-btn font-display font-medium text-sm px-4 py-2 rounded-lg text-white/80 hover:bg-white/10 whitespace-nowrap transition-colors">การเงิน & บัญชี</button>
+    <button data-tab="discrepancies" class="tab-btn font-display font-medium text-sm px-4 py-2 rounded-lg text-white/80 hover:bg-white/10 whitespace-nowrap transition-colors">ส่วนต่างสต็อก (Shadow)</button>
     <button data-tab="master" class="tab-btn font-display font-medium text-sm px-4 py-2 rounded-lg text-white/80 hover:bg-white/10 whitespace-nowrap transition-colors">ตึก & ชั้นวาง</button>
   </div>
 </header>
@@ -195,17 +196,18 @@ async function loadData() {
   document.getElementById('main-content').innerHTML = '<div class="text-center py-10 text-muted flex flex-col items-center"><span class="material-symbols-outlined animate-spin text-[32px] mb-2">sync</span> กำลังโหลดข้อมูล...</div>';
   
   try {
-    const [ {data: prods}, {data: batches}, {data: pshelves}, {data: shelves}, {data: bldgs}, {data: accs}, {data: txs} ] = await Promise.all([
+const [ {data: prods}, {data: batches}, {data: pshelves}, {data: shelves}, {data: bldgs}, {data: accs}, {data: txs}, {data: disc} ] = await Promise.all([
       supabase.from('products').select('*').order('name'),
       supabase.from('stock_batches').select('*').order('created_at', {ascending: false}),
       supabase.from('product_shelves').select('*'),
       supabase.from('shelves').select('*').order('floor'),
       supabase.from('buildings').select('*').order('name'),
       supabase.from('accounts').select('*').order('type'),
-      supabase.from('transactions').select('*').order('created_at', {ascending: false}).limit(100)
+      supabase.from('transactions').select('*').order('created_at', {ascending: false}).limit(100),
+      supabase.from('stock_discrepancies').select('*').order('created_at', {ascending: false}).limit(100)
     ]);
     
-    appData = { prods, batches, pshelves, shelves, bldgs, accs, txs };
+    appData = { prods, batches, pshelves, shelves, bldgs, accs, txs, disc };
     renderTab();
   } catch (e) {
     toast('โหลดข้อมูลไม่สำเร็จ: ' + e.message, 'error');
@@ -218,6 +220,7 @@ function renderTab() {
   if (currentTab === 'stock') main.innerHTML = renderStockTab();
   else if (currentTab === 'shelves') main.innerHTML = renderShelvesTab();
   else if (currentTab === 'finance') main.innerHTML = renderFinanceTab();
+  else if (currentTab === 'discrepancies') main.innerHTML = renderDiscrepanciesTab();
   else if (currentTab === 'master') main.innerHTML = renderMasterTab();
 }
 
@@ -493,7 +496,64 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
   });
 });
 
+function renderDiscrepanciesTab() {
+  let html = `<div class="flex justify-between items-center mb-4">
+                <h2 class="font-display text-lg font-semibold">ส่วนต่างสต็อกและยอดเงินเงา (Discrepancies)</h2>
+                <span class="text-xs text-muted">ใช้คำนวณ "พบส่วนต่างที่ยังไม่ได้อธิบาย"</span>
+              </div>
+              <div class="space-y-3">`;
+              
+  // แก้ไข: ใส่ ( ... || []) ดักจับกรณีดึงข้อมูลมาได้เป็น null
+  (appData.disc || []).forEach(d => {
+    const ps = appData.pshelves.find(x => x.id === d.product_shelf_id);
+    const p = ps ? appData.prods.find(x => x.id === ps.product_id) : null;
+    html += `
+      <div class="bg-surface rounded-xl p-4 shadow-sm border border-hairline flex items-center justify-between">
+        <div>
+          <p class="font-medium text-sm">${p ? escapeHTML(p.name) : 'สินค้าทั่วไป'} <span class="text-xs text-error font-mono">(${d.diff_qty} ชิ้น)</span></p>
+          <p class="text-xs text-muted mt-0.5">เหตุผล: ${escapeHTML(d.reason || 'ไม่ระบุ')} | วันที่: ${new Date(d.created_at).toLocaleString('th-TH')}</p>
+          <div class="flex gap-3 mt-2">
+            <span class="text-xs bg-hairline px-2 py-1 rounded">มูลค่าเงา: <b>฿${fmtMoney(d.value_at_selling_price)}</b></span>
+            <span class="text-xs ${d.resolved_as ? 'bg-secondary/10 text-secondary' : 'bg-warning/10 text-warning'} px-2 py-1 rounded">${d.resolved_as ? 'เคลียร์แล้ว' : 'ยังไม่เคลียร์'}</span>
+          </div>
+        </div>
+        <div class="flex gap-2">
+          <button onclick="editDiscrepancy('${d.id}')" class="w-9 h-9 rounded-lg bg-background border border-hairline flex items-center justify-center text-primary">
+            <span class="material-symbols-outlined text-[18px]">edit</span>
+          </button>
+          <button onclick="deleteDiscrepancy('${d.id}')" class="w-9 h-9 rounded-lg bg-error/10 border border-error/20 flex items-center justify-center text-error">
+            <span class="material-symbols-outlined text-[18px]">delete</span>
+          </button>
+        </div>
+      </div>`;
+  });
+  return html + '</div>';
+}
+
+window.editDiscrepancy = (id) => {
+  const d = appData.disc.find(x => x.id === id);
+  openModal(`แก้ไขยอดส่วนต่างเงา`, [
+    { label: 'มูลค่าคำนวณ (Value at Selling Price)', type: 'number', value: d.value_at_selling_price },
+    { label: 'สถานะการเคลียร์ (resolved_as หรือเว้นว่าง)', type: 'text', value: d.resolved_as || '' }
+  ], async (vals) => {
+    const val = parseFloat(vals[0]);
+    const resolved = vals[1].trim() || null;
+    if (isNaN(val)) throw new Error('มูลค่าไม่ถูกต้อง');
+    const { error } = await supabase.from('stock_discrepancies').update({ value_at_selling_price: val, resolved_as: resolved }).eq('id', id);
+    if (error) throw error;
+    toast('อัปเดตยอดส่วนต่างเงาสำเร็จ', 'success');
+  });
+};
+
+window.deleteDiscrepancy = async (id) => {
+  if (!confirm('ยืนยันลบรายการส่วนต่างนี้? (ยอดคำนวณเงาจะหายไปจากระบบทันที)')) return;
+  const { error } = await supabase.from('stock_discrepancies').delete().eq('id', id);
+  if (error) return toast(error.message, 'error');
+  toast('ลบรายการส่วนต่างสำเร็จ', 'success');
+  loadData();
+};
 loadData();
+
 
 </script>
 </body>
