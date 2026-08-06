@@ -547,9 +547,19 @@
         const { data, error } = await supabase.from('products').select('*').order('name');
         if (error) throw error; return data;
       },
-      async addStockBatch(product_id, cost_price, qty) {
+      async addStockBatch(product_id, cost_price, qty, account_id) {
         const { data, error } = await supabase.from('stock_batches').insert({ product_id, cost_price, initial_qty: qty, remaining_qty: qty }).select().single();
-        if (error) throw error; return data;
+        if (error) throw error;
+        if (account_id) {
+          await this.addTransaction({
+            account_id,
+            type: 'expense',
+            category: 'ซื้อสินค้าเข้าสต็อก',
+            amount: cost_price * qty,
+            note: null
+          });
+        }
+        return data;
       },async executeTransfer({ from_acc, to_acc, amount, note, from_name, to_name }) {
         const { error } = await supabase.rpc('execute_transfer', {
           p_from_acc: from_acc, p_to_acc: to_acc, p_amount: amount, p_note: note || null, p_from_name: from_name, p_to_name: to_name
@@ -591,7 +601,34 @@ const { data: batches, error: bErr } = await supabase
     });
     if (error) throw error; 
     return data;
-  },
+  },async decrementShelfItem(productShelfId, productId, qtyToRemove) {
+  // ลดจำนวนบนชั้น แล้วคืนของกลับเข้าล็อตสต็อกล่าสุดของสินค้านั้น
+  const { data: row, error: e1 } = await supabase
+    .from('product_shelves').select('quantity').eq('id', productShelfId).single();
+  if (e1) throw e1;
+
+  const newQty = Math.max(0, row.quantity - qtyToRemove);
+  const { error: e2 } = await supabase
+    .from('product_shelves').update({ quantity: newQty }).eq('id', productShelfId);
+  if (e2) throw e2;
+
+  const { data: batch, error: e3 } = await supabase
+    .from('stock_batches').select('id, remaining_qty').eq('product_id', productId)
+    .order('created_at', { ascending: false }).order('id', { ascending: false })
+    .limit(1).maybeSingle();
+  if (e3) throw e3;
+  if (batch) {
+    const { error: e4 } = await supabase
+      .from('stock_batches').update({ remaining_qty: batch.remaining_qty + qtyToRemove }).eq('id', batch.id);
+    if (e4) throw e4;
+  }
+  return newQty;
+},
+async removeShelfItem(productShelfId, productId, qty) {
+  if (qty > 0) await this.decrementShelfItem(productShelfId, productId, qty);
+  const { error } = await supabase.from('product_shelves').delete().eq('id', productShelfId);
+  if (error) throw error;
+},
       async updateProduct(id, patch) {
         const { data, error } = await supabase.from('products').update(patch).eq('id', id).select().single();
         if (error) throw error; return data;
@@ -1770,12 +1807,14 @@ const { data: batches, error: bErr } = await supabase
         }
         totalInput.addEventListener('input', update);
         qtyInput.addEventListener('input', update);
-        body.querySelector(`[data-rc-save="${p.id}"]`).onclick = async () => {
+       body.querySelector(`[data-rc-save="${p.id}"]`).onclick = async () => {
           const total = parseFloat(totalInput.value);
           const qty = parseInt(qtyInput.value, 10);
           if (!total || !qty) return toast('กรอกราคาต้นทุนรวมและจำนวนให้ครบ', 'error');
           const costPerUnit = (total / qty) + extraList.getTotalPerUnit();
-          await DB.addStockBatch(p.id, costPerUnit, qty);
+          const accounts = await DB.getAccounts();
+          const businessAccount = accounts.find(a => a.type === 'business') || accounts[0];
+          await DB.addStockBatch(p.id, costPerUnit, qty, businessAccount?.id);
           toast('บันทึกต้นทุนล็อตใหม่สำเร็จ ✓', 'success');
           go('inventory', { tab: 'products' });
         };
@@ -1991,12 +2030,14 @@ const { data: batches, error: bErr } = await supabase
           const costTotal = parseFloat(body.querySelector('#p-cost-total').value) || 0;
           const qty = parseInt(body.querySelector('#p-cost-qty').value, 10) || 0;
           if (!name || !price) return toast('กรอกชื่อและราคาขายให้ครบ', 'error');
-          if (addProductBtn.disabled) return; // guard against double-tap creating a duplicate product
+          if (addProductBtn.disabled) return;
           addProductBtn.disabled = true;
           try {
             const product = await DB.addProduct({ name, selling_price: price, min_stock_alert: min, image_url: null });
             if (costTotal > 0 && qty > 0) {
-              await DB.addStockBatch(product.id, (costTotal / qty) + pExtraList.getTotalPerUnit(), qty);
+              const accounts = await DB.getAccounts();
+              const businessAccount = accounts.find(a => a.type === 'business') || accounts[0];
+              await DB.addStockBatch(product.id, (costTotal / qty) + pExtraList.getTotalPerUnit(), qty, businessAccount?.id);
             }
             toast('เพิ่มสินค้าสำเร็จ ✓', 'success');
             go('inventory', { tab: 'products' });
@@ -2010,50 +2051,250 @@ const { data: batches, error: bErr } = await supabase
       }
 
       if (tab === 'assign') {
-        const [buildings, products] = await Promise.all([DB.getBuildings(), DB.getProducts()]);
-        body.innerHTML = `
-      <div class="bg-surface border border-hairline rounded-2xl p-4 space-y-3">
-        <p class="font-display font-medium text-sm">จัดวางสินค้าเข้าชั้น</p>
-        <select id="a-building" class="w-full text-sm bg-bg rounded-xl px-3 py-2.5 outline-none">
-          ${buildings.map(b => `<option value="${b.id}">${b.name}</option>`).join('')}
-        </select>
-        <select id="a-shelf" class="w-full text-sm bg-bg rounded-xl px-3 py-2.5 outline-none"></select>
-        <select id="a-product" class="w-full text-sm bg-bg rounded-xl px-3 py-2.5 outline-none">
-          ${products.map(p => `<option value="${p.id}">${p.name}</option>`).join('')}
-        </select>
-        <input id="a-qty" type="number" placeholder="จำนวนเริ่มต้น" class="w-full text-sm bg-bg rounded-xl px-3 py-2.5 outline-none">
-        <button id="a-save" class="press w-full bg-primary text-white py-2.5 rounded-xl font-medium text-sm">บันทึกการจัดวาง</button>
+  const buildings = await DB.getBuildings();
+  let selBuilding = state.selBuilding || buildings[0]?.id;
+  let selShelf = state.selShelf || null;
+  let shelfItems = [];
+  let stockByProduct = {}; // product_id -> remaining_units (total in warehouse, not counting what's on shelves)
+
+  body.innerHTML = `
+    <div class="flex gap-2 overflow-x-auto pb-1 mb-4 no-scrollbar" id="assign-bld-pills"></div>
+    <div class="flex gap-2 overflow-x-auto pb-1 mb-4 no-scrollbar" id="assign-shelf-pills"></div>
+    <div class="flex items-center justify-between px-1 mb-3">
+      <h3 class="text-xs font-bold text-muted uppercase tracking-wider">สินค้าบนชั้นนี้</h3>
+    </div>
+    <div id="assign-items-list" class="space-y-3">${skeleton('h-24')}</div>
+  `;
+
+  function renderBldPills() {
+    body.querySelector('#assign-bld-pills').innerHTML = buildings.map(b => `
+      <button data-bld-pill="${b.id}" class="press px-5 py-2.5 rounded-full text-sm font-medium whitespace-nowrap ${b.id === selBuilding ? 'bg-primary text-white shadow-md shadow-primary/20' : 'bg-surface border border-hairline text-muted'}">${escapeHTML(b.name)}</button>
+    `).join('');
+    body.querySelectorAll('[data-bld-pill]').forEach(btn => btn.onclick = async () => {
+      selBuilding = btn.dataset.bldPill; selShelf = null;
+      renderBldPills();
+      await loadShelves();
+    });
+  }
+
+  async function loadShelves() {
+    const shelves = await DB.getShelves(selBuilding);
+    if (!selShelf || !shelves.find(s => s.id === selShelf)) selShelf = shelves[0]?.id || null;
+    body.querySelector('#assign-shelf-pills').innerHTML = shelves.map(s => `
+      <button data-shelf-pill="${s.id}" class="press px-5 py-2 rounded-full text-sm font-medium whitespace-nowrap ${s.id === selShelf ? 'bg-primary-light text-primary border border-primary/30' : 'bg-surface border border-hairline text-muted'}">ชั้น ${s.floor}</button>
+    `).join('') || `<span class="text-xs text-muted py-2">ยังไม่มีชั้นวางในตึกนี้</span>`;
+    body.querySelectorAll('[data-shelf-pill]').forEach(btn => btn.onclick = async () => {
+      selShelf = btn.dataset.shelfPill;
+      await loadItems();
+    });
+    await loadItems();
+  }
+
+  async function refreshStockMap() {
+    const products = await DB.getProductsWithCost();
+    stockByProduct = {};
+    products.forEach(p => { stockByProduct[p.id] = p.remaining_units || 0; });
+  }
+
+  async function loadItems() {
+    const list = body.querySelector('#assign-items-list');
+    if (!selShelf) { list.innerHTML = `<p class="text-sm text-muted text-center py-8">ไม่มีชั้นวางให้จัดการ</p>`; return; }
+    list.innerHTML = skeleton('h-24');
+    [shelfItems] = await Promise.all([DB.getShelfItems(selShelf), refreshStockMap()]);
+
+    list.innerHTML = shelfItems.map(it => `
+      <div class="bg-surface p-4 rounded-2xl border border-hairline shadow-sm" data-item-card="${it.id}">
+        <div class="flex justify-between items-start mb-4">
+          <div class="min-w-0">
+            <div class="flex items-center gap-2">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-primary shrink-0"><path d="M21 8 12 3 3 8l9 5 9-5Z"/><path d="M3 8v8l9 5 9-5V8"/></svg>
+              <span class="font-display font-semibold text-[15px] truncate">${escapeHTML(it.product.name)}</span>
+            </div>
+            <p class="text-xs text-muted mt-1">
+              <span class="font-medium tnum" data-stock-val="${it.product.id}">${stockByProduct[it.product.id] ?? 0}</span> ชิ้น คงเหลือในสต็อก
+            </p>
+          </div>
+          <div class="flex gap-1 shrink-0">
+            <button data-move="${it.id}" class="press p-2 rounded-full text-muted hover:text-primary hover:bg-primary-light">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3h4v4M21 3l-7 7M7 21H3v-4M3 21l7-7"/></svg>
+            </button>
+            <button data-remove="${it.id}" class="press p-2 rounded-full text-muted hover:text-danger hover:bg-danger-light">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="flex items-center justify-between bg-bg p-1.5 rounded-xl gap-2">
+          <button data-qty-minus="${it.id}" class="press flex-1 bg-surface border border-hairline py-2 rounded-lg font-display font-semibold text-sm">− ลด</button>
+          <div class="text-center px-2 min-w-[56px]">
+            <div class="font-display font-semibold text-xl text-primary tnum" data-qty-val="${it.id}">${it.quantity}</div>
+            <div class="text-[10px] text-muted uppercase tracking-tight">บนชั้น</div>
+          </div>
+          <button data-qty-plus="${it.id}" class="press flex-1 bg-primary text-white py-2 rounded-lg font-display font-semibold text-sm">+ เพิ่ม</button>
+        </div>
       </div>
+    `).join('') + `
+      <button id="open-add-product" class="press w-full bg-surface border-2 border-dashed border-hairline rounded-2xl p-6 flex flex-col items-center gap-2">
+        <div class="w-11 h-11 rounded-full bg-primary-light flex items-center justify-center text-primary">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        </div>
+        <div class="text-center">
+          <p class="font-display font-medium text-sm">เพิ่มสินค้าเข้าชั้นวาง</p>
+          <p class="text-xs text-muted mt-0.5">แตะเพื่อเลือกสินค้าใหม่</p>
+        </div>
+      </button>
     `;
-        async function loadShelves() {
-          const shelves = await DB.getShelves(body.querySelector('#a-building').value);
-          body.querySelector('#a-shelf').innerHTML = shelves.map(s => `<option value="${s.id}">ชั้น ${s.floor}</option>`).join('') || '<option disabled>ไม่มีชั้น</option>';
-        }
-        body.querySelector('#a-building').onchange = loadShelves;
-        await loadShelves();
-        body.querySelector('#a-save').onclick = async () => {
-          const btn = body.querySelector('#a-save');
-          if (btn.disabled) return;
 
-          const shelfId = body.querySelector('#a-shelf').value;
-          const productId = body.querySelector('#a-product').value;
-          const qty = parseInt(body.querySelector('#a-qty').value, 10);
+    body.querySelectorAll('[data-qty-plus]').forEach(btn => btn.onclick = () => stepQty(btn.dataset.qtyPlus, 1));
+    body.querySelectorAll('[data-qty-minus]').forEach(btn => btn.onclick = () => stepQty(btn.dataset.qtyMinus, -1));
+    body.querySelectorAll('[data-move]').forEach(btn => btn.onclick = () => openMoveModal(btn.dataset.move));
+    body.querySelectorAll('[data-remove]').forEach(btn => btn.onclick = () => removeItem(btn.dataset.remove));
+    body.querySelector('#open-add-product').onclick = openAddModal;
+  }
 
-          if (!shelfId) return toast('ไม่มีชั้นให้เลือก', 'error');
-          // ดักจับกรณีผู้ใช้ไม่กรอก หรือกรอกเลข 0, ติดลบ
-          if (Number.isNaN(qty) || qty <= 0) return toast('กรุณาใส่จำนวนที่มากกว่า 0', 'error');
+  // +/- moves stock between "on shelf" and "in warehouse": plus takes from
+  // stock into the shelf, minus returns shelf stock back into the warehouse.
+ // stepQty: ใช้ RPC เดิมเฉพาะตอน "+", ส่วน "-" ใช้เมธอดใหม่ที่คืนของเข้าสต็อกจริง
+async function stepQty(itemId, delta) {
+  const it = shelfItems.find(x => x.id === itemId);
+  if (!it) return;
+  if (delta < 0 && it.quantity <= 0) return;
+  if (delta > 0 && (stockByProduct[it.product.id] ?? 0) <= 0) return toast('สินค้าในสต็อกไม่พอ', 'error');
 
-          btn.disabled = true;
-          try {
-            await DB.assignProductToShelf(shelfId, productId, qty);
-            toast('จัดวางสินค้าสำเร็จ ✓', 'success');
-          } catch(e) {
-            toast('เกิดข้อผิดพลาด: ' + e.message, 'error');
-          } finally {
-            btn.disabled = false;
-          }
-        };
+  const qtyEl = body.querySelector(`[data-qty-val="${itemId}"]`);
+  const stockEl = body.querySelector(`[data-stock-val="${it.product.id}"]`);
+  const prevQty = it.quantity, prevStock = stockByProduct[it.product.id] ?? 0;
+
+  it.quantity = Math.max(0, it.quantity + delta);
+  stockByProduct[it.product.id] = Math.max(0, prevStock - delta);
+  qtyEl.textContent = it.quantity;
+  if (stockEl) stockEl.textContent = stockByProduct[it.product.id];
+
+  try {
+    if (delta > 0) {
+      await DB.assignProductToShelf(selShelf, it.product.id, delta);
+    } else {
+      await DB.decrementShelfItem(itemId, it.product.id, -delta);
+    }
+  } catch (e) {
+    it.quantity = prevQty;
+    stockByProduct[it.product.id] = prevStock;
+    qtyEl.textContent = prevQty;
+    if (stockEl) stockEl.textContent = prevStock;
+    toast('ปรับจำนวนไม่สำเร็จ: ' + e.message, 'error');
+  }
+}
+
+ // removeItem: ใช้ removeShelfItem แทน assignProductToShelf ค่าติดลบ
+async function removeItem(itemId) {
+  const it = shelfItems.find(x => x.id === itemId);
+  if (!it) return;
+  if (!confirm(`ลบ "${it.product.name}" ออกจากชั้นนี้ทั้งหมด (${it.quantity} ชิ้น) และคืนเข้าสต็อกใช่หรือไม่?`)) return;
+
+  const card = body.querySelector(`[data-item-card="${itemId}"]`);
+  const removeBtn = card?.querySelector(`[data-remove="${itemId}"]`);
+  if (removeBtn) removeBtn.disabled = true;
+
+  try {
+    await DB.removeShelfItem(itemId, it.product.id, it.quantity);
+    toast('ลบสินค้าออกจากชั้นสำเร็จ ✓', 'success');
+    await loadItems();
+  } catch (e) {
+    toast('ลบไม่สำเร็จ: ' + e.message, 'error');
+    if (removeBtn) removeBtn.disabled = false;
+  }
+}
+
+  function openMoveModal(itemId) {
+    const it = shelfItems.find(x => x.id === itemId);
+    if (!it) return;
+    Promise.all([DB.getBuildings()]).then(([allBuildings]) => {
+      const modalWrap = document.createElement('div');
+      modalWrap.className = 'fixed inset-0 z-[60] bg-ink/40 backdrop-blur-sm flex flex-col justify-end p-4 screen';
+      modalWrap.innerHTML = `
+        <div class="bg-surface rounded-3xl p-5 w-full max-w-md mx-auto shadow-2xl pop-in">
+          <h3 class="font-display font-semibold text-lg mb-1">ย้าย "${escapeHTML(it.product.name)}"</h3>
+          <p class="text-xs text-muted mb-3">มีบนชั้นนี้ ${it.quantity} ชิ้น</p>
+          <select id="mv-building" class="w-full text-sm bg-bg rounded-xl px-3 py-2.5 outline-none mb-2">
+            ${allBuildings.map(b => `<option value="${b.id}">${escapeHTML(b.name)}</option>`).join('')}
+          </select>
+          <select id="mv-shelf" class="w-full text-sm bg-bg rounded-xl px-3 py-2.5 outline-none mb-3"><option>กำลังโหลด...</option></select>
+          <input id="mv-qty" type="number" placeholder="จำนวนที่จะย้าย" value="${it.quantity}" class="w-full text-sm bg-bg rounded-xl px-3 py-2.5 outline-none mb-4">
+          <div class="flex gap-2">
+            <button id="mv-cancel" class="press flex-1 py-3 bg-hairline text-ink rounded-xl font-medium text-sm">ยกเลิก</button>
+            <button id="mv-save" class="press flex-[2] py-3 bg-primary text-white rounded-xl font-medium text-sm">ยืนยันการย้าย</button>
+          </div>
+        </div>`;
+      document.body.appendChild(modalWrap);
+
+      async function loadMvShelves() {
+        const shelves = await DB.getShelves(modalWrap.querySelector('#mv-building').value);
+        modalWrap.querySelector('#mv-shelf').innerHTML = shelves
+          .filter(s => s.id !== selShelf)
+          .map(s => `<option value="${s.id}">ชั้น ${s.floor}</option>`).join('') || '<option disabled>ไม่มีชั้นอื่นในตึกนี้</option>';
       }
+      modalWrap.querySelector('#mv-building').value = selBuilding;
+      loadMvShelves();
+      modalWrap.querySelector('#mv-building').onchange = loadMvShelves;
+
+      modalWrap.querySelector('#mv-cancel').onclick = () => modalWrap.remove();
+      modalWrap.querySelector('#mv-save').onclick = async () => {
+        const destShelf = modalWrap.querySelector('#mv-shelf').value;
+        const qty = parseInt(modalWrap.querySelector('#mv-qty').value, 10);
+        if (!destShelf) return toast('ไม่มีชั้นปลายทางให้เลือก', 'error');
+        if (!qty || qty <= 0 || qty > it.quantity) return toast('กรุณาใส่จำนวนให้ถูกต้อง', 'error');
+        try {
+          await DB.transferStock({ source_shelf_id: selShelf, dest_shelf_id: destShelf, product_id: it.product.id, qty });
+          modalWrap.remove();
+          toast('ย้ายสินค้าสำเร็จ ✓', 'success');
+          go('inventory', { tab: 'assign', selBuilding, selShelf });
+        } catch (e) {
+          toast('ย้ายไม่สำเร็จ: ' + e.message, 'error');
+        }
+      };
+    });
+  }
+
+  function openAddModal() {
+    DB.getProducts().then(products => {
+      const onShelfIds = new Set(shelfItems.map(it => it.product.id));
+      const available = products.filter(p => !onShelfIds.has(p.id));
+      if (available.length === 0) return toast('สินค้าทั้งหมดถูกวางบนชั้นนี้แล้ว', 'info');
+
+      const modalWrap = document.createElement('div');
+      modalWrap.className = 'fixed inset-0 z-[60] bg-ink/40 backdrop-blur-sm flex flex-col justify-end p-4 screen';
+      modalWrap.innerHTML = `
+        <div class="bg-surface rounded-3xl p-5 w-full max-w-md mx-auto shadow-2xl pop-in">
+          <h3 class="font-display font-semibold text-lg mb-3">เพิ่มสินค้าเข้าชั้น</h3>
+          <select id="am-product" class="w-full text-sm bg-bg rounded-xl px-3 py-2.5 outline-none mb-3">
+            ${available.map(p => `<option value="${p.id}">${escapeHTML(p.name)}</option>`).join('')}
+          </select>
+          <input id="am-qty" type="number" placeholder="จำนวน" class="w-full text-sm bg-bg rounded-xl px-3 py-2.5 outline-none mb-4">
+          <div class="flex gap-2">
+            <button id="am-cancel" class="press flex-1 py-3 bg-hairline text-ink rounded-xl font-medium text-sm">ยกเลิก</button>
+            <button id="am-save" class="press flex-[2] py-3 bg-primary text-white rounded-xl font-medium text-sm">เพิ่มเข้าชั้น</button>
+          </div>
+        </div>`;
+      document.body.appendChild(modalWrap);
+      modalWrap.querySelector('#am-cancel').onclick = () => modalWrap.remove();
+      modalWrap.querySelector('#am-save').onclick = async () => {
+        const productId = modalWrap.querySelector('#am-product').value;
+        const qty = parseInt(modalWrap.querySelector('#am-qty').value, 10);
+        if (!qty || qty <= 0) return toast('กรุณาใส่จำนวนที่มากกว่า 0', 'error');
+        try {
+          await DB.assignProductToShelf(selShelf, productId, qty);
+          modalWrap.remove();
+          toast('จัดวางสินค้าสำเร็จ ✓', 'success');
+          go('inventory', { tab: 'assign', selBuilding, selShelf });
+        } catch (e) {
+          toast('เกิดข้อผิดพลาด: ' + e.message, 'error');
+        }
+      };
+    });
+  }
+
+  renderBldPills();
+  await loadShelves();
+}
 
       if (tab === 'transfer') {
         const [buildings, products] = await Promise.all([DB.getBuildings(), DB.getProducts()]);
