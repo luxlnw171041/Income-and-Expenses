@@ -602,27 +602,13 @@ const { data: batches, error: bErr } = await supabase
     if (error) throw error; 
     return data;
   },async decrementShelfItem(productShelfId, productId, qtyToRemove) {
-  // ลดจำนวนบนชั้น แล้วคืนของกลับเข้าล็อตสต็อกล่าสุดของสินค้านั้น
-  const { data: row, error: e1 } = await supabase
-    .from('product_shelves').select('quantity').eq('id', productShelfId).single();
-  if (e1) throw e1;
-
-  const newQty = Math.max(0, row.quantity - qtyToRemove);
-  const { error: e2 } = await supabase
-    .from('product_shelves').update({ quantity: newQty }).eq('id', productShelfId);
-  if (e2) throw e2;
-
-  const { data: batch, error: e3 } = await supabase
-    .from('stock_batches').select('id, remaining_qty').eq('product_id', productId)
-    .order('created_at', { ascending: false }).order('id', { ascending: false })
-    .limit(1).maybeSingle();
-  if (e3) throw e3;
-  if (batch) {
-    const { error: e4 } = await supabase
-      .from('stock_batches').update({ remaining_qty: batch.remaining_qty + qtyToRemove }).eq('id', batch.id);
-    if (e4) throw e4;
-  }
-  return newQty;
+  const { data, error } = await supabase.rpc('decrement_shelf_item', {
+    p_product_shelf_id: productShelfId,
+    p_product_id: productId,
+    p_qty: qtyToRemove
+  });
+  if (error) throw error;
+  return data; // จำนวนคงเหลือบนชั้นล่าสุด
 },
 async removeShelfItem(productShelfId, productId, qty) {
   if (qty > 0) await this.decrementShelfItem(productShelfId, productId, qty);
@@ -777,7 +763,10 @@ async removeShelfItem(productShelfId, productId, qty) {
     });
 
     function fmtMoney(n) { return Number(n || 0).toLocaleString('th-TH', { minimumFractionDigits: 0, maximumFractionDigits: 2 }); }
-
+    function pickRestockAccount(accounts) {
+      const business = accounts.filter(a => a.type === 'business');
+      return business.find(a => a.name.includes('โอน')) || business[0];
+    }
     function skeleton(h = 'h-24') {
       return `<div class="shimmer rounded-2xl ${h} w-full"></div>`;
     }
@@ -1118,7 +1107,7 @@ async removeShelfItem(productShelfId, productId, qty) {
   const btn = root.querySelector('#save-audit');
   const entries = Object.entries(countCart);
   const accounts = await DB.getAccounts().catch(() => []);
-  const businessAccount = accounts.find(a => a.type === 'business') || accounts[0];
+  const businessAccount = pickRestockAccount(accounts);
 
   // ค้นหารายการที่ "ของหาย" (actual < expected)
   const lostItems = entries.filter(([psId, c]) => c.actual < c.expected);
@@ -1813,7 +1802,7 @@ async removeShelfItem(productShelfId, productId, qty) {
           if (!total || !qty) return toast('กรอกราคาต้นทุนรวมและจำนวนให้ครบ', 'error');
           const costPerUnit = (total / qty) + extraList.getTotalPerUnit();
           const accounts = await DB.getAccounts();
-          const businessAccount = accounts.find(a => a.type === 'business') || accounts[0];
+          const businessAccount = pickRestockAccount(accounts);
           await DB.addStockBatch(p.id, costPerUnit, qty, businessAccount?.id);
           toast('บันทึกต้นทุนล็อตใหม่สำเร็จ ✓', 'success');
           go('inventory', { tab: 'products' });
