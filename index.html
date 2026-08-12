@@ -671,7 +671,7 @@ async removeShelfItem(productShelfId, productId, qty) {
     .select('amount')
     .in('account_id', businessAccIds)
     .eq('type', 'income')
-    .not('category', 'in', '("เงินทุน/เงินทอน","รายได้อื่น")')
+    .eq('category', 'ยอดขาย')
     .gt('created_at', lastReconciled);
     
   const totalActualIncome = incomeTxs ? incomeTxs.reduce((s, row) => s + row.amount, 0) : 0;
@@ -804,13 +804,22 @@ async removeShelfItem(productShelfId, productId, qty) {
             <div class="text-xs text-muted">เข้า-ออก ยอดคงเหลือ กรองวัน/สัปดาห์/เดือน</div>
           </div>
         </button>
-        <button onclick="window.location.href='product_locations.html'" class="press col-span-2 bg-accent text-white rounded-2xl p-4 flex items-center gap-3 shadow-sm">
+       <button onclick="window.location.href='product_locations.html'" class="press col-span-2 bg-accent text-white rounded-2xl p-4 flex items-center gap-3 shadow-sm">
           <div class="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8 12 3 3 8l9 5 9-5Z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg>
           </div>
           <div class="text-left">
             <div class="font-display font-medium text-sm">ตรวจสอบจุดวางสินค้าทั้งหมด</div>
             <div class="text-xs text-white/80">ดูจำนวนรวม เพิ่ม/ลด/ย้าย ตำแหน่งชั้นวาง</div>
+          </div>
+        </button>
+        <button onclick="window.location.href='note.html'" class="press col-span-2 bg-primary text-white rounded-2xl p-4 flex items-center gap-3 shadow-sm">
+          <div class="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6"/><path d="M20 4 10 14"/><rect x="4" y="8" width="10" height="12" rx="2"/></svg>
+          </div>
+          <div class="text-left">
+            <div class="font-display font-medium text-sm">บริการ (รับจ้าง)</div>
+            <div class="text-xs text-white/80">รีดผ้า ฟอกผ้า ฯลฯ ติดตามงาน-เงินแยกจากยอดขาย</div>
           </div>
         </button>
         <button onclick="window.location.href='sales_report.html'" class="press col-span-2 bg-success text-white rounded-2xl p-4 flex items-center gap-3 shadow-sm">
@@ -863,11 +872,12 @@ async removeShelfItem(productShelfId, productId, qty) {
     ]);
 
     const cards = [
-      { label: 'ยอดขายรวม', value: overview.total_sales, color: 'text-primary', icon: 'sale' },
-      { label: 'กำไรสุทธิ', value: overview.net_profit ?? (overview.total_sales - overview.total_expenses), color: overview.net_profit >= 0 ? 'text-success' : 'text-danger', icon: 'profit' },
-      { label: 'รายจ่ายรวม', value: overview.total_expenses, color: 'text-ink', icon: 'expense' },
-      { label: 'มูลค่าต้นทุนสูญหาย', value: overview.total_loss_value, color: 'text-danger', icon: 'loss' },
-    ];
+  { label: 'ยอดขายสินค้า', value: overview.total_sales, color: 'text-primary' },
+  { label: 'รายได้บริการ', value: overview.total_service_income, color: 'text-primary' },
+  { label: 'กำไรสุทธิ', value: overview.net_profit ?? (overview.total_sales + overview.total_service_income - overview.total_expenses), color: overview.net_profit >= 0 ? 'text-success' : 'text-danger' },
+  { label: 'รายจ่ายรวม', value: overview.total_expenses, color: 'text-ink' },
+  { label: 'มูลค่าต้นทุนสูญหาย', value: overview.total_loss_value, color: 'text-danger' },
+];
     root.querySelector('#dash-cards').innerHTML = cards.map((c, i) => `
       <div class="bg-surface rounded-2xl p-4 border border-hairline pop-in" style="animation-delay:${i * 60}ms">
         <p class="text-xs text-muted mb-1">${c.label}</p>

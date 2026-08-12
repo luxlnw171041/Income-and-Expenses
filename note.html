@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+  <title>บริการ (รับจ้าง)</title>
+  <meta name="theme-color" content="#145C52">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;500;600;700&family=Sarabun:wght@400;500;600&display=swap"
+    rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            bg: '#F5F7F1', surface: '#FFFFFF',
+            primary: { DEFAULT: '#145C52', dark: '#0E453D', light: '#E4EFEA' },
+            accent: { DEFAULT: '#F2A33C', dark: '#D98A22', light: '#FCEBD1' },
+            danger: { DEFAULT: '#D9483F', light: '#FBE4E2' },
+            success: { DEFAULT: '#3FA34D', light: '#E4F5E7' },
+            ink: '#1B2420', muted: '#6B7770', hairline: '#E4E7E0',
+          },
+          fontFamily: { display: ['Kanit', 'sans-serif'], body: ['Sarabun', 'sans-serif'] },
+          borderRadius: { '2xl': '1.25rem', '3xl': '1.75rem' },
+        }
+      }
+    }
+  </script>
+  <style>
+    * { -webkit-tap-highlight-color: transparent; }
+    body { font-family: 'Sarabun', sans-serif; background: #F5F7F1; color: #1B2420; }
+    .font-display { font-family: 'Kanit', sans-serif; }
+    .tnum { font-variant-numeric: tabular-nums; }
+    .screen { animation: fadeSlideIn .28s cubic-bezier(.22,.9,.32,1) both; }
+    @keyframes fadeSlideIn { from { opacity:0; transform:translateY(10px);} to { opacity:1; transform:none;} }
+    .press { transition: transform .12s ease, opacity .12s ease; }
+    .press:active { transform: scale(0.96); opacity: .85; }
+    .pop-in { animation: popIn .3s cubic-bezier(.34,1.56,.64,1) both; }
+    @keyframes popIn { 0% { opacity:0; transform:scale(.5) translateY(4px);} 100% { opacity:1; transform:scale(1) translateY(0);} }
+    #toast-wrap { position: fixed; top: max(env(safe-area-inset-top), 12px); left:0; right:0; z-index:60; display:flex; flex-direction:column; align-items:center; gap:8px; pointer-events:none; }
+    .toast { pointer-events:auto; animation: toastIn .35s cubic-bezier(.22,.9,.32,1) both; }
+    @keyframes toastIn { from { opacity:0; transform:translateY(-16px) scale(.96);} to { opacity:1; transform:none;} }
+    .toast.out { animation: toastOut .25s ease forwards; }
+    @keyframes toastOut { to { opacity:0; transform:translateY(-10px) scale(.97);} }
+    .shimmer { background: linear-gradient(90deg,#ECEFE8 25%,#F5F7F1 37%,#ECEFE8 63%); background-size:400% 100%; animation: shimmer 1.4s ease infinite; }
+    @keyframes shimmer { 0% { background-position:100% 0;} 100% { background-position:0 0;} }
+    input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance:none; margin:0; }
+  </style>
+</head>
+
+<body class="antialiased">
+  <div id="toast-wrap"></div>
+
+  <div class="max-w-md mx-auto min-h-screen flex flex-col bg-bg" style="padding-bottom: env(safe-area-inset-bottom);">
+    <header class="sticky top-0 z-40 bg-bg/90 backdrop-blur border-b border-hairline" style="padding-top: env(safe-area-inset-top);">
+      <div class="flex items-center justify-between px-4 h-14">
+        <div class="flex items-center gap-2">
+          <button id="back-btn" class="press w-8 h-8 rounded-xl bg-surface border border-hairline flex items-center justify-center text-muted">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
+          </button>
+          <span class="font-display font-semibold text-[15px] tracking-tight">บริการ (รับจ้าง)</span>
+        </div>
+      </div>
+    </header>
+
+    <main id="app" class="flex-1 px-4 pt-4 pb-28"></main>
+  </div>
+
+  <!-- ปุ่มเพิ่มงานใหม่ -->
+  <button id="fab-add" class="press fixed z-40 bottom-6 right-6 w-14 h-14 rounded-full bg-primary text-white shadow-lg flex items-center justify-center">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+  </button>
+
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+    /* ใส่ค่า Supabase ของร้านให้ตรงกับไฟล์หลัก (index.html) */
+    const SUPABASE_URL = 'https://dfemavcrzpmmgqqjrxvz.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRmZW1hdmNyenBtbWdxcWpyeHZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU2ODY4NTEsImV4cCI6MjEwMTI2Mjg1MX0.JYsRkjRwbAqKxqB9MT5iMDOeh5zh087sWmKo_Jx1cbc';
+
+    const CONFIGURED = !SUPABASE_URL.includes('SUPABASE_URL') && !!SUPABASE_ANON_KEY && !SUPABASE_ANON_KEY.includes('YOUR_SUPABASE');
+    const supabase = CONFIGURED ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+
+    const app = document.getElementById('app');
+    document.getElementById('back-btn').onclick = () => { window.location.href = 'index.html'; };
+
+    function toast(msg, kind = 'info') {
+      const wrap = document.getElementById('toast-wrap');
+      const el = document.createElement('div');
+      const styles = { info:'bg-ink text-white', success:'bg-success text-white', error:'bg-danger text-white' };
+      el.className = `toast ${styles[kind] || styles.info} text-sm font-medium px-4 py-2.5 rounded-full shadow-lg max-w-[90%] text-center`;
+      el.textContent = msg;
+      wrap.appendChild(el);
+      setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 250); }, 2600);
+    }
+
+    function escapeHTML(str) {
+      if (!str) return '';
+      return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+    }
+    function fmtMoney(n) { return Number(n || 0).toLocaleString('th-TH', { minimumFractionDigits: 0, maximumFractionDigits: 2 }); }
+    function fmtDate(d) { return d ? new Date(d).toLocaleDateString('th-TH', { day:'numeric', month:'short', year:'numeric' }) : '-'; }
+    function skeleton(h='h-24') { return `<div class="shimmer rounded-2xl ${h} w-full"></div>`; }
+
+    const DB = {
+      async getJobs() {
+        const { data, error } = await supabase.from('service_jobs').select('*').order('created_at', { ascending: false });
+        if (error) throw error; return data;
+      },
+      async getAccounts() {
+        const { data, error } = await supabase.from('accounts').select('*').order('type');
+        if (error) throw error; return data;
+      },
+      async addJob(job) {
+        const { data, error } = await supabase.from('service_jobs').insert(job).select().single();
+        if (error) throw error; return data;
+      },
+      async setJobStatus(id, job_status) {
+        const { error } = await supabase.from('service_jobs').update({ job_status }).eq('id', id);
+        if (error) throw error;
+      },
+      async markPaid(job_id, account_id) {
+        const { error } = await supabase.rpc('mark_service_paid', { p_job_id: job_id, p_account_id: account_id });
+        if (error) throw error;
+      },
+      async unmarkPaid(job_id) {
+        const { error } = await supabase.rpc('unmark_service_paid', { p_job_id: job_id });
+        if (error) throw error;
+      },
+      async deleteJob(job_id) {
+        const { error } = await supabase.rpc('delete_service_job', { p_job_id: job_id });
+        if (error) throw error;
+      },
+    };
+
+    let currentFilter = 'all'; // all | pending | done | unpaid | paid
+
+    async function render() {
+      app.innerHTML = `
+        <div class="flex gap-2 overflow-x-auto no-scrollbar mb-4 pb-1" id="filters">
+          ${[['all','ทั้งหมด'],['pending','ยังไม่เสร็จ'],['done','เสร็จแล้ว'],['unpaid','ยังไม่จ่าย'],['paid','จ่ายแล้ว']].map(([k,l]) => `
+            <button data-filter="${k}" class="press whitespace-nowrap text-xs font-medium px-3.5 py-2 rounded-full ${currentFilter===k ? 'bg-primary text-white' : 'bg-surface border border-hairline text-muted'}">${l}</button>
+          `).join('')}
+        </div>
+        <div id="job-list" class="space-y-3">${skeleton('h-28')}${skeleton('h-28')}</div>
+      `;
+      app.querySelectorAll('[data-filter]').forEach(btn => btn.onclick = () => { currentFilter = btn.dataset.filter; render(); });
+
+      try {
+        let jobs = await DB.getJobs();
+        if (currentFilter === 'pending') jobs = jobs.filter(j => j.job_status === 'pending');
+        if (currentFilter === 'done') jobs = jobs.filter(j => j.job_status === 'done');
+        if (currentFilter === 'unpaid') jobs = jobs.filter(j => !j.is_paid);
+        if (currentFilter === 'paid') jobs = jobs.filter(j => j.is_paid);
+
+        const list = document.getElementById('job-list');
+        if (jobs.length === 0) {
+          list.innerHTML = `<div class="text-center py-10 text-muted text-sm">ยังไม่มีงานในหมวดนี้</div>`;
+          return;
+        }
+        list.innerHTML = jobs.map(jobCardHtml).join('');
+        jobs.forEach(bindJobCard);
+      } catch (e) {
+        document.getElementById('job-list').innerHTML = `<div class="text-center py-8 text-danger text-sm">โหลดข้อมูลไม่สำเร็จ: ${escapeHTML(e.message)}</div>`;
+      }
+    }
+
+    function jobCardHtml(j) {
+      const isDone = j.job_status === 'done';
+      const showDue = !isDone && j.due_date;
+      return `
+      <div class="bg-surface border border-hairline rounded-2xl p-4 shadow-sm pop-in" data-job="${j.id}">
+        <div class="flex items-start justify-between gap-2 mb-2">
+          <div class="min-w-0">
+            <p class="font-display font-semibold text-[15px] truncate">${escapeHTML(j.service_name)}</p>
+            ${j.customer_name ? `<p class="text-xs text-muted truncate">ลูกค้า: ${escapeHTML(j.customer_name)}</p>` : ''}
+          </div>
+          <button data-del="${j.id}" class="press shrink-0 w-8 h-8 rounded-full bg-danger-light text-danger flex items-center justify-center">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+          </button>
+        </div>
+
+        <p class="text-xs text-muted mb-3">${j.quantity} × ฿${fmtMoney(j.unit_price)} = <span class="font-display font-semibold text-ink tnum">฿${fmtMoney(j.amount)}</span></p>
+
+        <div class="flex flex-wrap items-center gap-2 mb-3">
+          <span class="text-[11px] font-medium px-2.5 py-1 rounded-full ${isDone ? 'bg-success-light text-success' : 'bg-accent-light text-accent-dark'}">${isDone ? '✓ เสร็จแล้ว' : '⏳ กำลังทำ'}</span>
+          <span class="text-[11px] font-medium px-2.5 py-1 rounded-full ${j.is_paid ? 'bg-primary-light text-primary' : 'bg-hairline text-muted'}">${j.is_paid ? '฿ จ่ายแล้ว' : '฿ ยังไม่จ่าย'}</span>
+          ${showDue ? `<span class="text-[11px] font-medium px-2.5 py-1 rounded-full bg-danger-light text-danger">กำหนดส่ง: ${fmtDate(j.due_date)}</span>` : ''}
+        </div>
+
+        ${j.note ? `<p class="text-xs text-muted mb-3">📝 ${escapeHTML(j.note)}</p>` : ''}
+
+        <div class="flex gap-2">
+          <button data-toggle-done="${j.id}" data-status="${j.job_status}" class="press flex-1 text-xs font-medium py-2.5 rounded-xl border ${isDone ? 'border-hairline text-muted bg-bg' : 'border-primary/30 bg-primary-light text-primary'}">
+            ${isDone ? 'ทำเครื่องหมายว่ายังไม่เสร็จ' : 'ทำเสร็จแล้ว'}
+          </button>
+          ${j.is_paid
+            ? `<button data-unpay="${j.id}" class="press flex-1 text-xs font-medium py-2.5 rounded-xl border border-danger/30 bg-danger-light text-danger">ยกเลิกการจ่าย</button>`
+            : `<button data-pay="${j.id}" class="press flex-1 text-xs font-medium py-2.5 rounded-xl bg-primary text-white">✓ ติ๊กจ่ายแล้ว</button>`
+          }
+        </div>
+      </div>`;
+    }
+
+    function bindJobCard(j) {
+      const card = document.querySelector(`[data-job="${j.id}"]`);
+
+      // ทำเสร็จ/ยังไม่เสร็จ
+      const toggleBtn = card.querySelector(`[data-toggle-done]`);
+      toggleBtn.onclick = async () => {
+        if (toggleBtn.disabled) return;
+        toggleBtn.disabled = true;
+        try {
+          await DB.setJobStatus(j.id, j.job_status === 'done' ? 'pending' : 'done');
+          render();
+        } catch (e) { toast('ทำรายการไม่สำเร็จ: ' + e.message, 'error'); toggleBtn.disabled = false; }
+      };
+
+      // ลบงาน (บล็อกถ้าจ่ายแล้ว — ฝั่ง RPC เช็คอีกชั้น)
+      card.querySelector(`[data-del]`).onclick = async () => {
+        if (j.is_paid) return toast('งานนี้จ่ายเงินแล้ว ต้องกด "ยกเลิกการจ่าย" ก่อนถึงจะลบได้', 'error');
+        if (!confirm(`ลบงาน "${j.service_name}" ใช่หรือไม่?`)) return;
+        try {
+          await DB.deleteJob(j.id);
+          toast('ลบงานสำเร็จ ✓', 'success');
+          render();
+        } catch (e) { toast('ลบไม่สำเร็จ: ' + e.message, 'error'); }
+      };
+
+      // ติ๊กจ่ายแล้ว -> เปิด modal เลือกบัญชี
+      const payBtn = card.querySelector(`[data-pay]`);
+      if (payBtn) payBtn.onclick = () => openPayModal(j);
+
+      // ยกเลิกการจ่าย
+      const unpayBtn = card.querySelector(`[data-unpay]`);
+      if (unpayBtn) unpayBtn.onclick = async () => {
+        if (!confirm('ยืนยันยกเลิกการจ่ายเงิน?\n\nระบบจะลบรายการเงินที่เคยบันทึกไว้ และคืนยอดเงินในบัญชีให้อัตโนมัติ')) return;
+        if (unpayBtn.disabled) return;
+        unpayBtn.disabled = true;
+        try {
+          await DB.unmarkPaid(j.id);
+          toast('ยกเลิกการจ่ายสำเร็จ ✓', 'success');
+          render();
+        } catch (e) { toast('ทำรายการไม่สำเร็จ: ' + e.message, 'error'); unpayBtn.disabled = false; }
+      };
+    }
+
+    async function openPayModal(j) {
+      const accounts = await DB.getAccounts();
+      const modalWrap = document.createElement('div');
+      modalWrap.className = 'fixed inset-0 z-[60] bg-ink/40 backdrop-blur-sm flex flex-col justify-end p-4 screen';
+      modalWrap.innerHTML = `
+        <div class="bg-surface rounded-3xl p-5 w-full max-w-md mx-auto shadow-2xl pop-in">
+          <h3 class="font-display font-semibold text-lg mb-1">รับเงินค่าบริการ</h3>
+          <p class="text-xs text-muted mb-4">${escapeHTML(j.service_name)} · ฿${fmtMoney(j.amount)}</p>
+          <label class="text-xs text-muted mb-1 block">เงินเข้าบัญชีไหน</label>
+          <select id="pay-account" class="w-full text-sm bg-bg rounded-xl px-3 py-2.5 outline-none mb-4">
+            ${accounts.map(a => `<option value="${a.id}">${escapeHTML(a.name)} (${a.type === 'business' ? 'ร้าน' : 'ส่วนตัว'})</option>`).join('')}
+          </select>
+          <div class="flex gap-2">
+            <button id="pay-cancel" class="press flex-1 py-3 bg-hairline text-ink rounded-xl font-medium text-sm">ยกเลิก</button>
+            <button id="pay-confirm" class="press flex-[2] py-3 bg-primary text-white rounded-xl font-medium text-sm">ยืนยันรับเงิน</button>
+          </div>
+        </div>`;
+      document.body.appendChild(modalWrap);
+      modalWrap.querySelector('#pay-cancel').onclick = () => modalWrap.remove();
+      const confirmBtn = modalWrap.querySelector('#pay-confirm');
+      confirmBtn.onclick = async () => {
+        if (confirmBtn.disabled) return;
+        confirmBtn.disabled = true;
+        const accountId = modalWrap.querySelector('#pay-account').value;
+        try {
+          await DB.markPaid(j.id, accountId);
+          modalWrap.remove();
+          toast('บันทึกรับเงินสำเร็จ ✓', 'success');
+          render();
+        } catch (e) {
+          toast('ทำรายการไม่สำเร็จ: ' + e.message, 'error');
+          confirmBtn.disabled = false;
+        }
+      };
+    }
+
+    function openAddModal() {
+      const modalWrap = document.createElement('div');
+      modalWrap.className = 'fixed inset-0 z-[60] bg-ink/40 backdrop-blur-sm flex flex-col justify-end p-4 screen';
+      modalWrap.innerHTML = `
+        <div class="bg-surface rounded-3xl p-5 w-full max-w-md mx-auto shadow-2xl pop-in max-h-[90vh] overflow-y-auto">
+          <h3 class="font-display font-semibold text-lg mb-3">เพิ่มงานบริการ</h3>
+          <div class="space-y-3">
+            <input id="j-name" placeholder="ชื่อบริการ เช่น รีดผ้า" class="w-full text-sm bg-bg rounded-xl px-3 py-2.5 outline-none">
+            <input id="j-customer" placeholder="ชื่อลูกค้า (ไม่บังคับ)" class="w-full text-sm bg-bg rounded-xl px-3 py-2.5 outline-none">
+            <div class="flex gap-2">
+              <input id="j-qty" type="number" inputmode="decimal" placeholder="จำนวน" value="1" class="flex-1 text-sm bg-bg rounded-xl px-3 py-2.5 outline-none min-w-0">
+              <input id="j-price" type="number" inputmode="decimal" placeholder="ราคาต่อหน่วย" class="flex-1 text-sm bg-bg rounded-xl px-3 py-2.5 outline-none min-w-0">
+            </div>
+            <div id="j-total" class="hidden bg-primary-light text-primary text-sm font-display font-semibold rounded-xl px-3 py-2.5"></div>
+            <div>
+              <label class="text-xs text-muted mb-1 block">กำหนดส่ง (ไม่บังคับ — ใส่เมื่องานยังไม่เสร็จ)</label>
+              <input id="j-due" type="date" class="w-full text-sm bg-bg rounded-xl px-3 py-2.5 outline-none">
+            </div>
+            <input id="j-note" placeholder="โน้ตเพิ่มเติม (ไม่บังคับ)" class="w-full text-sm bg-bg rounded-xl px-3 py-2.5 outline-none">
+          </div>
+          <div class="flex gap-2 mt-4">
+            <button id="j-cancel" class="press flex-1 py-3 bg-hairline text-ink rounded-xl font-medium text-sm">ยกเลิก</button>
+            <button id="j-save" class="press flex-[2] py-3 bg-primary text-white rounded-xl font-medium text-sm">บันทึกงาน</button>
+          </div>
+        </div>`;
+      document.body.appendChild(modalWrap);
+
+      const qtyEl = modalWrap.querySelector('#j-qty');
+      const priceEl = modalWrap.querySelector('#j-price');
+      const totalBox = modalWrap.querySelector('#j-total');
+      function updateTotal() {
+        const qty = parseFloat(qtyEl.value) || 0;
+        const price = parseFloat(priceEl.value) || 0;
+        if (qty > 0 && price > 0) {
+          totalBox.classList.remove('hidden');
+          totalBox.textContent = `รวม ฿${fmtMoney(qty * price)}`;
+        } else {
+          totalBox.classList.add('hidden');
+        }
+      }
+      qtyEl.addEventListener('input', updateTotal);
+      priceEl.addEventListener('input', updateTotal);
+
+      modalWrap.querySelector('#j-cancel').onclick = () => modalWrap.remove();
+      const saveBtn = modalWrap.querySelector('#j-save');
+      saveBtn.onclick = async () => {
+        const service_name = modalWrap.querySelector('#j-name').value.trim();
+        const customer_name = modalWrap.querySelector('#j-customer').value.trim() || null;
+        const quantity = parseFloat(qtyEl.value);
+        const unit_price = parseFloat(priceEl.value);
+        const due_date = modalWrap.querySelector('#j-due').value || null;
+        const note = modalWrap.querySelector('#j-note').value.trim() || null;
+
+        if (!service_name) return toast('กรอกชื่อบริการ', 'error');
+        if (!quantity || quantity <= 0) return toast('กรอกจำนวนให้ถูกต้อง', 'error');
+        if (!unit_price || unit_price <= 0) return toast('กรอกราคาต่อหน่วยให้ถูกต้อง', 'error');
+
+        if (saveBtn.disabled) return;
+        saveBtn.disabled = true;
+        try {
+          await DB.addJob({
+            service_name, customer_name, quantity, unit_price,
+            amount: quantity * unit_price, due_date, note
+          });
+          modalWrap.remove();
+          toast('เพิ่มงานสำเร็จ ✓', 'success');
+          render();
+        } catch (e) {
+          toast('บันทึกไม่สำเร็จ: ' + e.message, 'error');
+          saveBtn.disabled = false;
+        }
+      };
+    }
+
+    document.getElementById('fab-add').onclick = openAddModal;
+
+    if (!CONFIGURED) {
+      app.innerHTML = `<div class="bg-danger-light border border-danger/30 text-danger rounded-2xl p-4 text-sm">
+        ยังไม่ได้ตั้งค่า Supabase — กรุณาใส่ค่า <b>SUPABASE_URL</b> และ <b>SUPABASE_ANON_KEY</b> ที่ด้านบนของไฟล์ก่อนใช้งานจริง
+      </div>`;
+    } else {
+      render();
+    }
+  </script>
+</body>
+
+</html>
