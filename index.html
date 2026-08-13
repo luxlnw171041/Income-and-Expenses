@@ -763,9 +763,10 @@ async removeShelfItem(productShelfId, productId, qty) {
     });
 
     function fmtMoney(n) { return Number(n || 0).toLocaleString('th-TH', { minimumFractionDigits: 0, maximumFractionDigits: 2 }); }
-    function pickRestockAccount(accounts) {
-      const business = accounts.filter(a => a.type === 'business');
-      return business.find(a => a.name.includes('โอน')) || business[0];
+    function accountOptionsHtml(accounts, preferName = 'โอน') {
+      const list = accounts.filter(a => a.type === 'business');
+      const preferred = list.find(a => a.name.includes(preferName));
+      return list.map(a => `<option value="${a.id}" ${preferred && a.id === preferred.id ? 'selected' : ''}>${escapeHTML(a.name)}</option>`).join('');
     }
     function skeleton(h = 'h-24') {
       return `<div class="shimmer rounded-2xl ${h} w-full"></div>`;
@@ -1618,7 +1619,7 @@ async removeShelfItem(productShelfId, productId, qty) {
     /* ============================================================
        10) INVENTORY & SHELF SETUP
        ============================================================ */
-    function productRowHtml(p) {
+    function productRowHtml(p, accounts) {
       const hasCost = p.cost_price != null;
       const profitPerUnit = hasCost ? p.selling_price - p.cost_price : null;
       return `
@@ -1672,6 +1673,12 @@ async removeShelfItem(productShelfId, productId, qty) {
       <div data-rc-extra-wrap="${p.id}" class="space-y-1.5"></div>
 
       <div data-rc-calc="${p.id}" class="hidden text-xs text-primary bg-primary-light rounded-xl p-2.5 space-y-0.5"></div>
+      <div>
+        <label class="text-xs text-muted mb-1 block">จ่ายเงินจากบัญชีไหน</label>
+        <select data-rc-account="${p.id}" class="w-full text-sm bg-bg rounded-xl px-3 py-2 outline-none border border-hairline">
+          ${accountOptionsHtml(accounts)}
+        </select>
+      </div>
       <button data-rc-save="${p.id}" class="press w-full bg-primary text-white text-sm font-medium py-2 rounded-xl">บันทึกต้นทุนล็อตนี้</button>
     </div>
   </div>`;
@@ -1713,7 +1720,7 @@ async removeShelfItem(productShelfId, productId, qty) {
       };
     }
 
-    function bindProductRestockForms(body, products) {
+     function bindProductRestockForms(body, products, accounts) {
       // toggle restock form
       body.querySelectorAll('[data-restock-toggle]').forEach(btn => {
         btn.onclick = () => {
@@ -1810,10 +1817,10 @@ async removeShelfItem(productShelfId, productId, qty) {
           const total = parseFloat(totalInput.value);
           const qty = parseInt(qtyInput.value, 10);
           if (!total || !qty) return toast('กรอกราคาต้นทุนรวมและจำนวนให้ครบ', 'error');
+          const selectedAccountId = body.querySelector(`[data-rc-account="${p.id}"]`).value;
+          if (!selectedAccountId) return toast('เลือกบัญชีที่จะจ่ายเงิน', 'error');
           const costPerUnit = (total / qty) + extraList.getTotalPerUnit();
-          const accounts = await DB.getAccounts();
-          const businessAccount = pickRestockAccount(accounts);
-          await DB.addStockBatch(p.id, costPerUnit, qty, businessAccount?.id);
+          await DB.addStockBatch(p.id, costPerUnit, qty, selectedAccountId);
           toast('บันทึกต้นทุนล็อตใหม่สำเร็จ ✓', 'success');
           go('inventory', { tab: 'products' });
         };
@@ -1965,8 +1972,8 @@ async removeShelfItem(productShelfId, productId, qty) {
     });
   }
 
-      if (tab === 'products') {
-        const products = await DB.getProductsWithCost();
+    if (tab === 'products') {
+        const [products, accountsForRestock] = await Promise.all([DB.getProductsWithCost(), DB.getAccounts()]);
         body.innerHTML = `
       <div class="bg-surface border border-hairline rounded-2xl p-4 mb-4 space-y-2">
         <p class="font-display font-medium text-sm mb-1">เพิ่มสินค้าใหม่</p>
@@ -1984,12 +1991,18 @@ async removeShelfItem(productShelfId, productId, qty) {
         </div>
         <div id="p-extra-wrap" class="space-y-1.5"></div>
 
-        <div id="p-calc" class="hidden bg-primary-light rounded-xl p-3 text-sm text-primary space-y-0.5"></div>
+       <div id="p-calc" class="hidden bg-primary-light rounded-xl p-3 text-sm text-primary space-y-0.5"></div>
+        <div id="p-account-wrap" class="hidden">
+          <label class="text-xs text-muted mb-1 block">จ่ายเงินจากบัญชีไหน</label>
+          <select id="p-account" class="w-full text-sm bg-bg rounded-xl px-3 py-2.5 outline-none border border-hairline">
+            ${accountOptionsHtml(accountsForRestock)}
+          </select>
+        </div>
         <input id="p-min" type="number" placeholder="แจ้งเตือนเมื่อเหลือ ≤ (ค่าเริ่มต้น 5)" class="w-full text-sm bg-bg rounded-xl px-3 py-2.5 outline-none min-w-0">
         <button id="add-product" class="press w-full bg-primary text-white py-2.5 rounded-xl font-medium text-sm">เพิ่มสินค้า</button>
       </div>
       <div class="space-y-2" id="product-list">
-        ${products.map(p => productRowHtml(p)).join('')}
+        ${products.map(p => productRowHtml(p, accountsForRestock)).join('')}
       </div>
     `;
 
@@ -2002,20 +2015,22 @@ async removeShelfItem(productShelfId, productId, qty) {
           const costTotal = parseFloat(body.querySelector('#p-cost-total').value) || 0;
           const qty = parseInt(body.querySelector('#p-cost-qty').value, 10) || 0;
           const calcBox = body.querySelector('#p-calc');
-          if (costTotal > 0 && qty > 0) {
+         if (costTotal > 0 && qty > 0) {
             const mainCostPerUnit = costTotal / qty;
             const costPerUnit = mainCostPerUnit + pExtraPerUnit;
             const profitPerUnit = price - costPerUnit;
             const totalProfit = profitPerUnit * qty;
             calcBox.classList.remove('hidden');
+            body.querySelector('#p-account-wrap').classList.remove('hidden');
             calcBox.innerHTML = `
           ${pExtraPerUnit > 0 ? `<p>ต้นทุนหลัก: <span class="font-display font-semibold tnum">฿${fmtMoney(mainCostPerUnit)}</span>/ชิ้น + เพิ่มเติม <span class="font-display font-semibold tnum">฿${fmtMoney(pExtraPerUnit)}</span>/ชิ้น</p>` : ''}
           <p>ต้นทุนรวมต่อชิ้น: <span class="font-display font-semibold tnum">฿${fmtMoney(costPerUnit)}</span></p>
           <p>กำไรต่อชิ้น: <span class="font-display font-semibold tnum ${profitPerUnit >= 0 ? 'text-primary' : 'text-danger'}">฿${fmtMoney(profitPerUnit)}</span></p>
           <p>กำไรรวมทั้งล็อต (${qty} ชิ้น): <span class="font-display font-semibold tnum ${totalProfit >= 0 ? 'text-primary' : 'text-danger'}">฿${fmtMoney(totalProfit)}</span></p>
         `;
-          } else {
+         } else {
             calcBox.classList.add('hidden');
+            body.querySelector('#p-account-wrap').classList.add('hidden');
           }
         }
         ['#p-price', '#p-cost-total', '#p-cost-qty'].forEach(sel => body.querySelector(sel).addEventListener('input', readCalc));
@@ -2034,9 +2049,9 @@ async removeShelfItem(productShelfId, productId, qty) {
           try {
             const product = await DB.addProduct({ name, selling_price: price, min_stock_alert: min, image_url: null });
             if (costTotal > 0 && qty > 0) {
-              const accounts = await DB.getAccounts();
-              const businessAccount = accounts.find(a => a.type === 'business') || accounts[0];
-              await DB.addStockBatch(product.id, (costTotal / qty) + pExtraList.getTotalPerUnit(), qty, businessAccount?.id);
+              const selectedAccountId = body.querySelector('#p-account').value;
+              if (!selectedAccountId) { toast('เลือกบัญชีที่จะจ่ายเงิน', 'error'); addProductBtn.disabled = false; return; }
+              await DB.addStockBatch(product.id, (costTotal / qty) + pExtraList.getTotalPerUnit(), qty, selectedAccountId);
             }
             toast('เพิ่มสินค้าสำเร็จ ✓', 'success');
             go('inventory', { tab: 'products' });
@@ -2046,7 +2061,7 @@ async removeShelfItem(productShelfId, productId, qty) {
           }
         };
 
-        bindProductRestockForms(body, products);
+        bindProductRestockForms(body, products, accountsForRestock);
       }
 
       if (tab === 'assign') {
