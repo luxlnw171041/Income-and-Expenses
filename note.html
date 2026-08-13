@@ -4,11 +4,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
-  <title>บริการ (รับจ้าง)</title>
+  <title>บริการ &amp; โน้ต</title>
   <meta name="theme-color" content="#145C52">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link
-    href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;500;600;700&family=Sarabun:wght@400;500;600&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;500;600;700&family=Sarabun:wght@400;500;600&family=Kalam:wght@400;700&display=swap"
     rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -23,7 +23,11 @@
             success: { DEFAULT: '#3FA34D', light: '#E4F5E7' },
             ink: '#1B2420', muted: '#6B7770', hairline: '#E4E7E0',
           },
-          fontFamily: { display: ['Kanit', 'sans-serif'], body: ['Sarabun', 'sans-serif'] },
+          fontFamily: {
+            display: ['Kanit', 'sans-serif'],
+            body: ['Sarabun', 'sans-serif'],
+            hand: ['Kalam', 'cursive'],
+          },
           borderRadius: { '2xl': '1.25rem', '3xl': '1.75rem' },
         }
       }
@@ -33,6 +37,7 @@
     * { -webkit-tap-highlight-color: transparent; }
     body { font-family: 'Sarabun', sans-serif; background: #F5F7F1; color: #1B2420; }
     .font-display { font-family: 'Kanit', sans-serif; }
+    .font-hand { font-family: 'Kalam', cursive; }
     .tnum { font-variant-numeric: tabular-nums; }
     .screen { animation: fadeSlideIn .28s cubic-bezier(.22,.9,.32,1) both; }
     @keyframes fadeSlideIn { from { opacity:0; transform:translateY(10px);} to { opacity:1; transform:none;} }
@@ -40,6 +45,10 @@
     .press:active { transform: scale(0.96); opacity: .85; }
     .pop-in { animation: popIn .3s cubic-bezier(.34,1.56,.64,1) both; }
     @keyframes popIn { 0% { opacity:0; transform:scale(.5) translateY(4px);} 100% { opacity:1; transform:scale(1) translateY(0);} }
+    .page-in-right { animation: pageInRight .28s cubic-bezier(.22,.9,.32,1) both; }
+    @keyframes pageInRight { from { opacity:0; transform:translateX(24px);} to { opacity:1; transform:none;} }
+    .page-in-left { animation: pageInLeft .28s cubic-bezier(.22,.9,.32,1) both; }
+    @keyframes pageInLeft { from { opacity:0; transform:translateX(-24px);} to { opacity:1; transform:none;} }
     #toast-wrap { position: fixed; top: max(env(safe-area-inset-top), 12px); left:0; right:0; z-index:60; display:flex; flex-direction:column; align-items:center; gap:8px; pointer-events:none; }
     .toast { pointer-events:auto; animation: toastIn .35s cubic-bezier(.22,.9,.32,1) both; }
     @keyframes toastIn { from { opacity:0; transform:translateY(-16px) scale(.96);} to { opacity:1; transform:none;} }
@@ -48,6 +57,10 @@
     .shimmer { background: linear-gradient(90deg,#ECEFE8 25%,#F5F7F1 37%,#ECEFE8 63%); background-size:400% 100%; animation: shimmer 1.4s ease infinite; }
     @keyframes shimmer { 0% { background-position:100% 0;} 100% { background-position:0 0;} }
     input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance:none; margin:0; }
+    .note-card { transition: transform .2s ease, box-shadow .2s ease; }
+    .note-card:active { transform: scale(0.97) !important; }
+    .no-scrollbar::-webkit-scrollbar { display:none; }
+    .no-scrollbar { -ms-overflow-style:none; scrollbar-width:none; }
   </style>
 </head>
 
@@ -61,7 +74,7 @@
           <button id="back-btn" class="press w-8 h-8 rounded-xl bg-surface border border-hairline flex items-center justify-center text-muted">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
           </button>
-          <span class="font-display font-semibold text-[15px] tracking-tight">บริการ (รับจ้าง)</span>
+          <span id="page-title" class="font-display font-semibold text-[15px] tracking-tight">บริการ (รับจ้าง)</span>
         </div>
       </div>
     </header>
@@ -69,7 +82,7 @@
     <main id="app" class="flex-1 px-4 pt-4 pb-28"></main>
   </div>
 
-  <!-- ปุ่มเพิ่มงานใหม่ -->
+  <!-- ปุ่มเพิ่มรายการ (ใช้ร่วมกันทั้งสองแท็บ สลับ handler ตอน switchTab) -->
   <button id="fab-add" class="press fixed z-40 bottom-6 right-6 w-14 h-14 rounded-full bg-primary text-white shadow-lg flex items-center justify-center">
     <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
   </button>
@@ -78,13 +91,15 @@
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
     /* ใส่ค่า Supabase ของร้านให้ตรงกับไฟล์หลัก (index.html) */
-    const SUPABASE_URL = 'https://dfemavcrzpmmgqqjrxvz.supabase.co';
+     const SUPABASE_URL = 'https://dfemavcrzpmmgqqjrxvz.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRmZW1hdmNyenBtbWdxcWpyeHZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU2ODY4NTEsImV4cCI6MjEwMTI2Mjg1MX0.JYsRkjRwbAqKxqB9MT5iMDOeh5zh087sWmKo_Jx1cbc';
 
     const CONFIGURED = !SUPABASE_URL.includes('SUPABASE_URL') && !!SUPABASE_ANON_KEY && !SUPABASE_ANON_KEY.includes('YOUR_SUPABASE');
     const supabase = CONFIGURED ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
     const app = document.getElementById('app');
+    const pageTitle = document.getElementById('page-title');
+    const fabBtn = document.getElementById('fab-add');
     document.getElementById('back-btn').onclick = () => { window.location.href = 'index.html'; };
 
     function toast(msg, kind = 'info') {
@@ -103,8 +118,13 @@
     }
     function fmtMoney(n) { return Number(n || 0).toLocaleString('th-TH', { minimumFractionDigits: 0, maximumFractionDigits: 2 }); }
     function fmtDate(d) { return d ? new Date(d).toLocaleDateString('th-TH', { day:'numeric', month:'short', year:'numeric' }) : '-'; }
+    function fmtDateShort(d) { return d ? new Date(d).toLocaleDateString('th-TH', { day:'numeric', month:'short' }) : ''; }
+    function fmtDateTimeFull(d) { return d ? new Date(d).toLocaleString('th-TH', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' }) : ''; }
     function skeleton(h='h-24') { return `<div class="shimmer rounded-2xl ${h} w-full"></div>`; }
 
+    /* ============================================================
+       DB
+       ============================================================ */
     const DB = {
       async getJobs() {
         const { data, error } = await supabase.from('service_jobs').select('*').order('created_at', { ascending: false });
@@ -134,12 +154,66 @@
         const { error } = await supabase.rpc('delete_service_job', { p_job_id: job_id });
         if (error) throw error;
       },
+      async getNotes() {
+        const { data, error } = await supabase.from('notes').select('*')
+          .order('is_pinned', { ascending: false })
+          .order('updated_at', { ascending: false });
+        if (error) throw error; return data;
+      },
+      async addNote(note) {
+        const { data, error } = await supabase.from('notes').insert(note).select().single();
+        if (error) throw error; return data;
+      },
+      async updateNote(id, patch) {
+        const { data, error } = await supabase.from('notes').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', id).select().single();
+        if (error) throw error; return data;
+      },
+      async togglePin(id, is_pinned) {
+        const { error } = await supabase.from('notes').update({ is_pinned }).eq('id', id);
+        if (error) throw error;
+      },
+      async deleteNote(id) {
+        const { error } = await supabase.from('notes').delete().eq('id', id);
+        if (error) throw error;
+      },
+      async markNotified(id) {
+        const { error } = await supabase.from('notes').update({ notified_at: new Date().toISOString() }).eq('id', id);
+        if (error) throw error;
+      },
     };
 
-    let currentFilter = 'all'; // all | pending | done | unpaid | paid
+    /* ============================================================
+       TAB SHELL
+       ============================================================ */
+    let currentTab = 'jobs'; // 'jobs' | 'notes'
 
-    async function render() {
+    function renderShell() {
       app.innerHTML = `
+        <div class="flex gap-2 mb-4 bg-surface border border-hairline rounded-full p-1" id="tab-bar">
+          <button data-tab="jobs" class="press flex-1 text-xs font-medium py-2 rounded-full transition-colors ${currentTab === 'jobs' ? 'bg-primary text-white' : 'text-muted'}">🧺 บริการ</button>
+          <button data-tab="notes" class="press flex-1 text-xs font-medium py-2 rounded-full transition-colors ${currentTab === 'notes' ? 'bg-primary text-white' : 'text-muted'}">📝 โน้ต</button>
+        </div>
+        <div id="tab-content"></div>
+      `;
+      app.querySelectorAll('#tab-bar [data-tab]').forEach(btn => btn.onclick = () => switchTab(btn.dataset.tab));
+    }
+
+    function switchTab(tab) {
+      currentTab = tab;
+      pageTitle.textContent = tab === 'jobs' ? 'บริการ (รับจ้าง)' : 'สมุดโน้ตน่ารัก 🌸';
+      fabBtn.onclick = tab === 'jobs' ? openAddModal : () => openNoteModal();
+      renderShell();
+      if (tab === 'jobs') renderJobs(); else renderNotes();
+    }
+
+    /* ============================================================
+       งานบริการ
+       ============================================================ */
+    let currentFilter = 'all';
+
+    async function renderJobs() {
+      const content = document.getElementById('tab-content');
+      content.innerHTML = `
         <div class="flex gap-2 overflow-x-auto no-scrollbar mb-4 pb-1" id="filters">
           ${[['all','ทั้งหมด'],['pending','ยังไม่เสร็จ'],['done','เสร็จแล้ว'],['unpaid','ยังไม่จ่าย'],['paid','จ่ายแล้ว']].map(([k,l]) => `
             <button data-filter="${k}" class="press whitespace-nowrap text-xs font-medium px-3.5 py-2 rounded-full ${currentFilter===k ? 'bg-primary text-white' : 'bg-surface border border-hairline text-muted'}">${l}</button>
@@ -147,7 +221,7 @@
         </div>
         <div id="job-list" class="space-y-3">${skeleton('h-28')}${skeleton('h-28')}</div>
       `;
-      app.querySelectorAll('[data-filter]').forEach(btn => btn.onclick = () => { currentFilter = btn.dataset.filter; render(); });
+      content.querySelectorAll('[data-filter]').forEach(btn => btn.onclick = () => { currentFilter = btn.dataset.filter; renderJobs(); });
 
       try {
         let jobs = await DB.getJobs();
@@ -208,33 +282,29 @@
     function bindJobCard(j) {
       const card = document.querySelector(`[data-job="${j.id}"]`);
 
-      // ทำเสร็จ/ยังไม่เสร็จ
       const toggleBtn = card.querySelector(`[data-toggle-done]`);
       toggleBtn.onclick = async () => {
         if (toggleBtn.disabled) return;
         toggleBtn.disabled = true;
         try {
           await DB.setJobStatus(j.id, j.job_status === 'done' ? 'pending' : 'done');
-          render();
+          renderJobs();
         } catch (e) { toast('ทำรายการไม่สำเร็จ: ' + e.message, 'error'); toggleBtn.disabled = false; }
       };
 
-      // ลบงาน (บล็อกถ้าจ่ายแล้ว — ฝั่ง RPC เช็คอีกชั้น)
       card.querySelector(`[data-del]`).onclick = async () => {
         if (j.is_paid) return toast('งานนี้จ่ายเงินแล้ว ต้องกด "ยกเลิกการจ่าย" ก่อนถึงจะลบได้', 'error');
         if (!confirm(`ลบงาน "${j.service_name}" ใช่หรือไม่?`)) return;
         try {
           await DB.deleteJob(j.id);
           toast('ลบงานสำเร็จ ✓', 'success');
-          render();
+          renderJobs();
         } catch (e) { toast('ลบไม่สำเร็จ: ' + e.message, 'error'); }
       };
 
-      // ติ๊กจ่ายแล้ว -> เปิด modal เลือกบัญชี
       const payBtn = card.querySelector(`[data-pay]`);
       if (payBtn) payBtn.onclick = () => openPayModal(j);
 
-      // ยกเลิกการจ่าย
       const unpayBtn = card.querySelector(`[data-unpay]`);
       if (unpayBtn) unpayBtn.onclick = async () => {
         if (!confirm('ยืนยันยกเลิกการจ่ายเงิน?\n\nระบบจะลบรายการเงินที่เคยบันทึกไว้ และคืนยอดเงินในบัญชีให้อัตโนมัติ')) return;
@@ -243,7 +313,7 @@
         try {
           await DB.unmarkPaid(j.id);
           toast('ยกเลิกการจ่ายสำเร็จ ✓', 'success');
-          render();
+          renderJobs();
         } catch (e) { toast('ทำรายการไม่สำเร็จ: ' + e.message, 'error'); unpayBtn.disabled = false; }
       };
     }
@@ -276,7 +346,7 @@
           await DB.markPaid(j.id, accountId);
           modalWrap.remove();
           toast('บันทึกรับเงินสำเร็จ ✓', 'success');
-          render();
+          renderJobs();
         } catch (e) {
           toast('ทำรายการไม่สำเร็จ: ' + e.message, 'error');
           confirmBtn.disabled = false;
@@ -350,7 +420,7 @@
           });
           modalWrap.remove();
           toast('เพิ่มงานสำเร็จ ✓', 'success');
-          render();
+          renderJobs();
         } catch (e) {
           toast('บันทึกไม่สำเร็จ: ' + e.message, 'error');
           saveBtn.disabled = false;
@@ -358,14 +428,485 @@
       };
     }
 
-    document.getElementById('fab-add').onclick = openAddModal;
+    /* ============================================================
+       โน้ตน่ารัก — sticky wall + สมุดโน้ต (page-flip) + เช็คลิสต์ + สติกเกอร์ + แท็ก + แจ้งเตือน + ค้นหา
+       ============================================================ */
+    const NOTE_COLORS = [
+      { key: 'yellow', bg: '#FFF6D8', tape: 'rgba(252,211,77,0.55)' },
+      { key: 'pink',   bg: '#FFE3EE', tape: 'rgba(244,143,177,0.50)' },
+      { key: 'green',  bg: '#E1F5E3', tape: 'rgba(129,199,132,0.50)' },
+      { key: 'blue',   bg: '#E1EEFC', tape: 'rgba(100,181,246,0.50)' },
+      { key: 'purple', bg: '#EFE3FB', tape: 'rgba(186,104,200,0.45)' },
+    ];
+    const STICKER_OPTIONS = ['🌸','✨','🎀','🍓','🧸','💌','🪴','☁️','☕','⭐️','💕','📌','🍀','🎈','🌙'];
 
+    function colorOf(key) { return NOTE_COLORS.find(c => c.key === key) || NOTE_COLORS[0]; }
+    function tiltOf(id) {
+      let h = 0;
+      for (const ch of String(id)) h = (h * 31 + ch.charCodeAt(0)) % 997;
+      return (h % 7) - 3;
+    }
+    function toDatetimeLocalValue(iso) {
+      if (!iso) return '';
+      const d = new Date(iso);
+      const pad = n => String(n).padStart(2, '0');
+      return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
+
+    let notesCache = [];
+    let reminderInterval = null;
+    let noteViewMode = 'grid';   // 'grid' | 'book'
+    let noteFilter = 'all';      // 'all' | 'pinned' | <tag>
+    let noteSearch = '';
+    let bookPageIndex = 0;
+
+    function reminderBadgeHtml(n) {
+      if (!n.remind_at) return '';
+      const t = new Date(n.remind_at).getTime();
+      const now = Date.now();
+      let cls = 'bg-white/70 text-ink/60';
+      let prefix = '⏰ ';
+      if (t < now) { cls = 'bg-danger text-white'; prefix = '⏰ เลยเวลานัดแล้ว · '; }
+      else if (t - now <= 24 * 3600 * 1000) { cls = 'bg-accent text-white'; prefix = '⏰ ใกล้ถึงเวลา · '; }
+      return `<div class="inline-block text-[11px] font-medium px-2.5 py-1 rounded-full mb-2 ${cls}">${prefix}${fmtDateTimeFull(n.remind_at)}</div>`;
+    }
+
+    function noteBodyHtml(n, big) {
+      if (n.note_type === 'checklist' && Array.isArray(n.checklist)) {
+        const items = n.checklist;
+        const done = items.filter(i => i.done).length;
+        const shown = big ? items : items.slice(0, 5);
+        const sizeCls = big ? 'text-[17px]' : 'text-[14px]';
+        return `
+          <div class="space-y-1.5 mb-2" data-checklist-wrap>
+            ${shown.map((it, idx) => `
+              <div class="flex items-center gap-2 ${sizeCls} font-hand ${it.done ? 'line-through opacity-45' : ''}" data-check-item="${idx}">
+                <span data-check-toggle="${idx}" class="w-4 h-4 rounded border shrink-0 cursor-pointer flex items-center justify-center ${it.done ? 'bg-ink border-ink' : 'border-ink/40 bg-white/50'}">
+                  ${it.done ? '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round"><path d="M20 6 9 17l-5-5"/></svg>' : ''}
+                </span>
+                <span class="break-words">${escapeHTML(it.text)}</span>
+              </div>`).join('')}
+            ${!big && items.length > 5 ? `<p class="text-[11px] text-ink/40">+${items.length - 5} รายการ</p>` : ''}
+          </div>
+          <p class="text-[11px] text-ink/50 mb-2">${done}/${items.length} เสร็จแล้ว</p>
+        `;
+      }
+      const sizeCls = big ? 'text-[17px] leading-relaxed' : 'text-[15px] leading-snug';
+      return `<p class="font-hand ${sizeCls} text-ink/80 whitespace-pre-wrap mb-2 break-words">${escapeHTML(n.content || '')}</p>`;
+    }
+
+    function bindChecklistToggles(container, note) {
+      container.querySelectorAll('[data-check-toggle]').forEach(el => {
+        el.onclick = async (e) => {
+          e.stopPropagation();
+          const idx = parseInt(el.dataset.checkToggle, 10);
+          const items = JSON.parse(JSON.stringify(note.checklist));
+          items[idx].done = !items[idx].done;
+          try {
+            const updated = await DB.updateNote(note.id, { checklist: items });
+            note.checklist = updated.checklist;
+            note.updated_at = updated.updated_at;
+            const idxCache = notesCache.findIndex(x => x.id === note.id);
+            if (idxCache !== -1) notesCache[idxCache] = { ...notesCache[idxCache], ...updated };
+            renderNotesBody();
+          } catch (err) { toast('ทำรายการไม่สำเร็จ', 'error'); }
+        };
+      });
+    }
+
+    /* ---------- top-level render ---------- */
+    async function renderNotes() {
+      const content = document.getElementById('tab-content');
+      content.innerHTML = `<div id="notes-loading">${skeleton('h-32')}${skeleton('h-40')}</div>`;
+      try {
+        notesCache = await DB.getNotes();
+        renderNotesChrome();
+      } catch (e) {
+        content.innerHTML = `<div class="text-center py-8 text-danger text-sm">โหลดข้อมูลไม่สำเร็จ: ${escapeHTML(e.message)}</div>`;
+      }
+    }
+
+    function getAllTags() {
+      const set = new Set();
+      notesCache.forEach(n => { if (n.tag) set.add(n.tag); });
+      return Array.from(set);
+    }
+
+    function getFilteredNotes() {
+      let list = notesCache;
+      if (noteFilter === 'pinned') list = list.filter(n => n.is_pinned);
+      else if (noteFilter !== 'all') list = list.filter(n => n.tag === noteFilter);
+      const q = noteSearch.trim().toLowerCase();
+      if (q) {
+        list = list.filter(n =>
+          (n.title || '').toLowerCase().includes(q) ||
+          (n.content || '').toLowerCase().includes(q) ||
+          (n.tag || '').toLowerCase().includes(q)
+        );
+      }
+      return list;
+    }
+
+    function renderNotesChrome() {
+      const content = document.getElementById('tab-content');
+      const tags = getAllTags();
+      content.innerHTML = `
+        <div class="flex items-center gap-2 bg-surface border border-hairline rounded-full px-3.5 py-2.5 mb-3">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-muted shrink-0"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          <input id="note-search" value="${escapeHTML(noteSearch)}" placeholder="ค้นหาโน้ต..." class="flex-1 bg-transparent outline-none text-sm min-w-0">
+        </div>
+        <div class="flex items-center justify-between gap-2 mb-3">
+          <div class="flex gap-2 overflow-x-auto no-scrollbar flex-1" id="tag-filters">
+            <button data-tagf="all" class="press whitespace-nowrap text-xs font-medium px-3 py-1.5 rounded-full ${noteFilter==='all' ? 'bg-primary text-white' : 'bg-surface border border-hairline text-muted'}">ทั้งหมด</button>
+            <button data-tagf="pinned" class="press whitespace-nowrap text-xs font-medium px-3 py-1.5 rounded-full ${noteFilter==='pinned' ? 'bg-primary text-white' : 'bg-surface border border-hairline text-muted'}">📌 ปักหมุด</button>
+            ${tags.map(t => `<button data-tagf="${escapeHTML(t)}" class="press whitespace-nowrap text-xs font-medium px-3 py-1.5 rounded-full ${noteFilter===t ? 'bg-primary text-white' : 'bg-surface border border-hairline text-muted'}">#${escapeHTML(t)}</button>`).join('')}
+          </div>
+          <div class="flex bg-surface border border-hairline rounded-full p-1 shrink-0">
+            <button data-view="grid" class="press w-8 h-8 rounded-full flex items-center justify-center ${noteViewMode==='grid' ? 'bg-primary text-white' : 'text-muted'}">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+            </button>
+            <button data-view="book" class="press w-8 h-8 rounded-full flex items-center justify-center ${noteViewMode==='book' ? 'bg-primary text-white' : 'text-muted'}">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 4h6a4 4 0 0 1 4 4v12a3 3 0 0 0-3-3H2z"/><path d="M22 4h-6a4 4 0 0 0-4 4v12a3 3 0 0 1 3-3h7z"/></svg>
+            </button>
+          </div>
+        </div>
+        <div id="notes-body"></div>
+      `;
+      content.querySelector('#note-search').addEventListener('input', (e) => { noteSearch = e.target.value; renderNotesBody(); });
+      content.querySelectorAll('[data-tagf]').forEach(btn => btn.onclick = () => { noteFilter = btn.dataset.tagf; bookPageIndex = 0; renderNotesChrome(); });
+      content.querySelectorAll('[data-view]').forEach(btn => btn.onclick = () => { noteViewMode = btn.dataset.view; bookPageIndex = 0; renderNotesChrome(); });
+      renderNotesBody();
+      startReminderWatcher();
+    }
+
+    function renderNotesBody() {
+      const body = document.getElementById('notes-body');
+      if (!body) return;
+      const filtered = getFilteredNotes();
+      if (filtered.length === 0) {
+        body.innerHTML = `<div class="text-center py-14 text-muted text-sm">ยังไม่มีโน้ตในหมวดนี้ 🌱<br>กดปุ่ม + ด้านล่างเพื่อเริ่มจดได้เลย</div>`;
+        return;
+      }
+      if (noteViewMode === 'grid') renderGrid(body, filtered);
+      else renderBook(body, filtered);
+    }
+
+    /* ---------- Grid (สติกเกอร์วางบนโต๊ะ) ---------- */
+    function renderGrid(body, notes) {
+      body.innerHTML = `<div class="grid grid-cols-2 gap-4 items-start">${notes.map(noteCardHtml).join('')}</div>`;
+      notes.forEach(n => bindNoteCard(body, n));
+    }
+
+    function noteCardHtml(n) {
+      const c = colorOf(n.color);
+      const tilt = tiltOf(n.id);
+      return `
+      <div class="note-card relative rounded-2xl p-4 pt-7 shadow-[0_6px_16px_rgba(27,36,32,0.10)] pop-in" style="background:${c.bg}; transform:rotate(${tilt}deg);" data-note="${n.id}">
+        <div class="absolute -top-2 left-1/2 w-16 h-5 rounded-sm" style="background:${c.tape}; transform:translateX(-50%) rotate(-3deg); mix-blend-mode:multiply;"></div>
+        ${n.sticker ? `<div class="absolute -top-3 -right-2 text-2xl drop-shadow" style="transform:rotate(12deg);">${n.sticker}</div>` : ''}
+        ${n.is_pinned ? `<div class="absolute top-2.5 right-2.5 w-3 h-3 rounded-full bg-danger shadow"></div>` : ''}
+        <p class="font-hand text-[18px] leading-tight text-ink mb-1 pr-3 break-words">${n.title ? escapeHTML(n.title) : '<span class="opacity-40 text-sm font-body">ไม่มีหัวข้อ</span>'}</p>
+        ${noteBodyHtml(n, false)}
+        ${n.tag ? `<span class="inline-block text-[10px] font-medium px-2 py-0.5 rounded-full bg-white/60 text-ink/60 mb-2">#${escapeHTML(n.tag)}</span>` : ''}
+        ${reminderBadgeHtml(n)}
+        <div class="flex items-center justify-between mt-1">
+          <span class="text-[10px] text-ink/40">${fmtDateShort(n.updated_at)}</span>
+          <div class="flex gap-1">
+            <button data-pin="${n.id}" class="press flex items-center justify-center bg-white/60 rounded-full ${n.is_pinned ? 'text-danger' : 'text-ink/40'}" style="width:26px;height:26px;">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="${n.is_pinned ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2"><path d="M12 2 9 9l-7 1 5 5-1 7 6-4 6 4-1-7 5-5-7-1-3-7Z"/></svg>
+            </button>
+            <button data-edit="${n.id}" class="press flex items-center justify-center bg-white/60 text-ink/60 rounded-full" style="width:26px;height:26px;">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+            </button>
+            <button data-del="${n.id}" class="press flex items-center justify-center bg-white/60 text-danger rounded-full" style="width:26px;height:26px;">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>`;
+    }
+
+    function bindNoteCard(scope, n) {
+      const card = scope.querySelector(`[data-note="${n.id}"]`);
+      if (!card) return;
+      bindChecklistToggles(card, n);
+
+      const pinBtn = card.querySelector('[data-pin]');
+      pinBtn.onclick = async () => {
+        if (pinBtn.disabled) return;
+        pinBtn.disabled = true;
+        try { await DB.togglePin(n.id, !n.is_pinned); await renderNotes(); }
+        catch (e) { toast('ทำรายการไม่สำเร็จ', 'error'); pinBtn.disabled = false; }
+      };
+      card.querySelector('[data-edit]').onclick = () => openNoteModal(n);
+      const delBtn = card.querySelector('[data-del]');
+      delBtn.onclick = async () => {
+        if (!confirm('ลบโน้ตนี้ใช่หรือไม่?')) return;
+        if (delBtn.disabled) return;
+        delBtn.disabled = true;
+        try { await DB.deleteNote(n.id); toast('ลบโน้ตสำเร็จ ✓', 'success'); await renderNotes(); }
+        catch (e) { toast('ลบไม่สำเร็จ: ' + e.message, 'error'); delBtn.disabled = false; }
+      };
+    }
+
+    /* ---------- Book (สมุดโน้ต เปิดทีละหน้า) ---------- */
+    function renderBook(body, notes) {
+      if (bookPageIndex >= notes.length) bookPageIndex = notes.length - 1;
+      if (bookPageIndex < 0) bookPageIndex = 0;
+      const n = notes[bookPageIndex];
+      const c = colorOf(n.color);
+      body.innerHTML = `
+        <div class="relative">
+          <div class="relative rounded-2xl shadow-[0_10px_28px_rgba(27,36,32,0.14)] pl-9 pr-5 py-6 min-h-[380px] page-in-right" id="book-page"
+               style="background-color:${c.bg}; background-image: repeating-linear-gradient(to bottom, transparent 0px, transparent 27px, rgba(27,36,32,0.09) 28px); background-position: 0 4px;">
+            <!-- สันสมุดแบบห่วงสปริง -->
+            <div class="absolute left-2.5 top-6 bottom-6 w-3 flex flex-col justify-between">
+              ${Array.from({ length: 9 }).map(() => '<div class="w-3 h-3 rounded-full bg-white/70 border border-ink/10 shadow-inner shrink-0"></div>').join('')}
+            </div>
+            ${n.sticker ? `<div class="absolute top-3 right-4 text-3xl drop-shadow" style="transform:rotate(10deg);">${n.sticker}</div>` : ''}
+            ${n.is_pinned ? `<div class="absolute top-4 left-1/2 -ml-2 w-4 h-4 rounded-full bg-danger shadow z-10"></div>` : ''}
+            <p class="font-hand text-[24px] leading-tight text-ink mb-3 pr-8 break-words">${n.title ? escapeHTML(n.title) : '<span class="opacity-40 text-lg font-body">ไม่มีหัวข้อ</span>'}</p>
+            ${noteBodyHtml(n, true)}
+            <div class="flex flex-wrap gap-2 mb-2">
+              ${n.tag ? `<span class="inline-block text-[11px] font-medium px-2.5 py-1 rounded-full bg-white/60 text-ink/60">#${escapeHTML(n.tag)}</span>` : ''}
+            </div>
+            ${reminderBadgeHtml(n)}
+            <div class="flex items-center justify-between mt-3 pt-3 border-t border-ink/10">
+              <span class="text-[11px] text-ink/40">อัปเดตล่าสุด ${fmtDateShort(n.updated_at)}</span>
+              <div class="flex gap-1.5">
+                <button data-pin="${n.id}" class="press flex items-center justify-center bg-white/60 rounded-full ${n.is_pinned ? 'text-danger' : 'text-ink/40'}" style="width:28px;height:28px;">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="${n.is_pinned ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2"><path d="M12 2 9 9l-7 1 5 5-1 7 6-4 6 4-1-7 5-5-7-1-3-7Z"/></svg>
+                </button>
+                <button data-edit="${n.id}" class="press flex items-center justify-center bg-white/60 text-ink/60 rounded-full" style="width:28px;height:28px;">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                </button>
+                <button data-del="${n.id}" class="press flex items-center justify-center bg-white/60 text-danger rounded-full" style="width:28px;height:28px;">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between mt-3">
+            <button id="book-prev" class="press w-10 h-10 rounded-full bg-surface border border-hairline flex items-center justify-center text-muted disabled:opacity-30" ${bookPageIndex===0?'disabled':''}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
+            </button>
+            <span class="text-xs font-display font-medium text-muted tnum">หน้า ${bookPageIndex + 1} / ${notes.length}</span>
+            <button id="book-next" class="press w-10 h-10 rounded-full bg-surface border border-hairline flex items-center justify-center text-muted disabled:opacity-30" ${bookPageIndex===notes.length-1?'disabled':''}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+            </button>
+          </div>
+        </div>
+      `;
+
+      const pageEl = document.getElementById('book-page');
+      bindChecklistToggles(pageEl, n);
+      pageEl.querySelector('[data-pin]').onclick = async (e) => {
+        e.currentTarget.disabled = true;
+        try { await DB.togglePin(n.id, !n.is_pinned); await renderNotes(); }
+        catch (err) { toast('ทำรายการไม่สำเร็จ', 'error'); }
+      };
+      pageEl.querySelector('[data-edit]').onclick = () => openNoteModal(n);
+      pageEl.querySelector('[data-del]').onclick = async () => {
+        if (!confirm('ลบโน้ตนี้ใช่หรือไม่?')) return;
+        try { await DB.deleteNote(n.id); toast('ลบโน้ตสำเร็จ ✓', 'success'); await renderNotes(); }
+        catch (err) { toast('ลบไม่สำเร็จ: ' + err.message, 'error'); }
+      };
+
+      const prevBtn = document.getElementById('book-prev');
+      const nextBtn = document.getElementById('book-next');
+      prevBtn.onclick = () => { if (bookPageIndex > 0) { bookPageIndex--; renderNotesBody(); } };
+      nextBtn.onclick = () => { if (bookPageIndex < notes.length - 1) { bookPageIndex++; renderNotesBody(); } };
+
+      // ปัดซ้าย/ขวาเพื่อเปลี่ยนหน้า
+      let touchStartX = null;
+      pageEl.addEventListener('touchstart', (e) => { touchStartX = e.touches[0].clientX; }, { passive: true });
+      pageEl.addEventListener('touchend', (e) => {
+        if (touchStartX === null) return;
+        const dx = e.changedTouches[0].clientX - touchStartX;
+        if (dx > 50 && bookPageIndex > 0) { bookPageIndex--; renderNotesBody(); }
+        else if (dx < -50 && bookPageIndex < notes.length - 1) { bookPageIndex++; renderNotesBody(); }
+        touchStartX = null;
+      }, { passive: true });
+    }
+
+    /* ---------- Modal เพิ่ม/แก้ไขโน้ต ---------- */
+    function mountChecklistEditor(wrapEl, initialItems) {
+      let items = initialItems && initialItems.length ? JSON.parse(JSON.stringify(initialItems)) : [{ text: '', done: false }];
+      function rowHtml(it, i) {
+        return `
+        <div class="flex items-center gap-2" data-clrow="${i}">
+          <span data-cl-toggle="${i}" class="w-5 h-5 rounded border shrink-0 cursor-pointer flex items-center justify-center ${it.done ? 'bg-ink border-ink' : 'border-hairline bg-white'}">
+            ${it.done ? '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round"><path d="M20 6 9 17l-5-5"/></svg>' : ''}
+          </span>
+          <input data-cl-text="${i}" value="${escapeHTML(it.text)}" placeholder="รายการที่ ${i+1}" class="flex-1 text-sm bg-bg rounded-lg px-2.5 py-2 outline-none min-w-0">
+          <button data-cl-del="${i}" class="press w-6 h-6 rounded-full bg-danger-light text-danger flex items-center justify-center text-xs shrink-0">×</button>
+        </div>`;
+      }
+      function render() {
+        wrapEl.innerHTML = items.map(rowHtml).join('');
+        items.forEach((it, i) => {
+          wrapEl.querySelector(`[data-cl-toggle="${i}"]`).onclick = () => { items[i].done = !items[i].done; render(); };
+          wrapEl.querySelector(`[data-cl-text="${i}"]`).addEventListener('input', e => { items[i].text = e.target.value; });
+          wrapEl.querySelector(`[data-cl-del="${i}"]`).onclick = () => { items.splice(i, 1); if (items.length===0) items.push({text:'',done:false}); render(); };
+        });
+      }
+      render();
+      return { addRow() { items.push({ text: '', done: false }); render(); }, getItems() { return items.filter(it => it.text.trim() !== ''); } };
+    }
+
+    function openNoteModal(existing = null) {
+      const isEdit = !!existing;
+      let selectedColor = existing?.color || 'yellow';
+      let selectedSticker = existing?.sticker || '';
+      let noteType = existing?.note_type || 'text';
+
+      const modalWrap = document.createElement('div');
+      modalWrap.className = 'fixed inset-0 z-[60] bg-ink/40 backdrop-blur-sm flex flex-col justify-end p-4 screen';
+      modalWrap.innerHTML = `
+        <div class="bg-surface rounded-3xl p-5 w-full max-w-md mx-auto shadow-2xl pop-in max-h-[90vh] overflow-y-auto">
+          <h3 class="font-display font-semibold text-lg mb-3">${isEdit ? 'แก้ไขโน้ต' : 'โน้ตใหม่ 📝'}</h3>
+
+          <div class="flex bg-bg rounded-full p-1 mb-3" id="n-type-toggle">
+            <button data-ntype="text" class="flex-1 py-2 text-xs font-medium rounded-full transition-colors ${noteType==='text' ? 'bg-primary text-white' : 'text-muted'}">📝 ข้อความ</button>
+            <button data-ntype="checklist" class="flex-1 py-2 text-xs font-medium rounded-full transition-colors ${noteType==='checklist' ? 'bg-primary text-white' : 'text-muted'}">☑️ เช็คลิสต์</button>
+          </div>
+
+          <div class="space-y-3">
+            <input id="n-title" placeholder="หัวข้อ (ไม่บังคับ)" value="${existing ? escapeHTML(existing.title || '') : ''}" class="w-full text-sm bg-bg rounded-xl px-3 py-2.5 outline-none">
+
+            <div id="n-text-wrap" class="${noteType==='checklist' ? 'hidden' : ''}">
+              <textarea id="n-content" rows="5" placeholder="เขียนโน้ตที่นี่..." class="w-full text-sm bg-bg rounded-xl px-3 py-2.5 outline-none resize-none">${existing ? escapeHTML(existing.content || '') : ''}</textarea>
+            </div>
+            <div id="n-checklist-wrap" class="${noteType==='checklist' ? '' : 'hidden'} space-y-2">
+              <div id="n-checklist-items" class="space-y-2"></div>
+              <button id="n-checklist-add" type="button" class="press text-xs font-medium text-primary">+ เพิ่มรายการ</button>
+            </div>
+
+            <input id="n-tag" placeholder="แท็ก เช่น งาน, เรียน (ไม่บังคับ)" value="${existing ? escapeHTML(existing.tag || '') : ''}" class="w-full text-sm bg-bg rounded-xl px-3 py-2.5 outline-none">
+
+            <div>
+              <p class="text-xs text-muted mb-1.5">สีโน้ต</p>
+              <div class="flex gap-2" id="n-colors">
+                ${NOTE_COLORS.map(c => `<button data-color="${c.key}" style="background:${c.bg}" class="press w-9 h-9 rounded-full border-2 ${c.key === selectedColor ? 'border-ink' : 'border-transparent'}"></button>`).join('')}
+              </div>
+            </div>
+
+            <div>
+              <p class="text-xs text-muted mb-1.5">สติกเกอร์ (ไม่บังคับ)</p>
+              <div class="flex gap-1.5 flex-wrap" id="n-stickers">
+                <button data-sticker="" class="press w-9 h-9 rounded-full border-2 flex items-center justify-center text-xs ${selectedSticker==='' ? 'border-ink bg-bg' : 'border-transparent bg-bg text-muted'}">ไม่มี</button>
+                ${STICKER_OPTIONS.map(s => `<button data-sticker="${s}" class="press w-9 h-9 rounded-full border-2 flex items-center justify-center text-lg ${selectedSticker===s ? 'border-ink bg-bg' : 'border-transparent bg-bg'}">${s}</button>`).join('')}
+              </div>
+            </div>
+
+            <div>
+              <label class="text-xs text-muted mb-1 block">🔔 ตั้งแจ้งเตือน (ไม่บังคับ)</label>
+              <input id="n-remind" type="datetime-local" value="${toDatetimeLocalValue(existing?.remind_at)}" class="w-full text-sm bg-bg rounded-xl px-3 py-2.5 outline-none">
+              <p class="text-[11px] text-muted mt-1">แจ้งเตือนจะขึ้นได้ก็ต่อเมื่อเปิดหน้านี้ค้างไว้ในเบราว์เซอร์เท่านั้น (ไม่ใช่ push notification จริง)</p>
+            </div>
+          </div>
+          <div class="flex gap-2 mt-4">
+            <button id="n-cancel" class="press flex-1 py-3 bg-hairline text-ink rounded-xl font-medium text-sm">ยกเลิก</button>
+            <button id="n-save" class="press flex-[2] py-3 bg-primary text-white rounded-xl font-medium text-sm">บันทึกโน้ต</button>
+          </div>
+        </div>`;
+      document.body.appendChild(modalWrap);
+
+      const checklistCtrl = mountChecklistEditor(modalWrap.querySelector('#n-checklist-items'), existing?.checklist);
+      modalWrap.querySelector('#n-checklist-add').onclick = () => checklistCtrl.addRow();
+
+      modalWrap.querySelectorAll('[data-ntype]').forEach(btn => btn.onclick = () => {
+        noteType = btn.dataset.ntype;
+        modalWrap.querySelectorAll('[data-ntype]').forEach(b => { b.classList.remove('bg-primary','text-white'); b.classList.add('text-muted'); });
+        btn.classList.remove('text-muted'); btn.classList.add('bg-primary','text-white');
+        modalWrap.querySelector('#n-text-wrap').classList.toggle('hidden', noteType !== 'text');
+        modalWrap.querySelector('#n-checklist-wrap').classList.toggle('hidden', noteType !== 'checklist');
+      });
+
+      modalWrap.querySelectorAll('[data-color]').forEach(btn => btn.onclick = () => {
+        selectedColor = btn.dataset.color;
+        modalWrap.querySelectorAll('[data-color]').forEach(b => b.classList.remove('border-ink'));
+        modalWrap.querySelectorAll('[data-color]').forEach(b => b.classList.add('border-transparent'));
+        btn.classList.remove('border-transparent'); btn.classList.add('border-ink');
+      });
+
+      modalWrap.querySelectorAll('[data-sticker]').forEach(btn => btn.onclick = () => {
+        selectedSticker = btn.dataset.sticker;
+        modalWrap.querySelectorAll('[data-sticker]').forEach(b => b.classList.remove('border-ink'));
+        modalWrap.querySelectorAll('[data-sticker]').forEach(b => b.classList.add('border-transparent'));
+        btn.classList.remove('border-transparent'); btn.classList.add('border-ink');
+      });
+
+      modalWrap.querySelector('#n-cancel').onclick = () => modalWrap.remove();
+      const saveBtn = modalWrap.querySelector('#n-save');
+      saveBtn.onclick = async () => {
+        const title = modalWrap.querySelector('#n-title').value.trim() || null;
+        const tag = modalWrap.querySelector('#n-tag').value.trim() || null;
+        const remindVal = modalWrap.querySelector('#n-remind').value;
+        const remind_at = remindVal ? new Date(remindVal).toISOString() : null;
+
+        let content = null, checklist = null;
+        if (noteType === 'checklist') {
+          checklist = checklistCtrl.getItems();
+          if (checklist.length === 0) return toast('เพิ่มอย่างน้อย 1 รายการในเช็คลิสต์', 'error');
+        } else {
+          content = modalWrap.querySelector('#n-content').value.trim();
+          if (!content) return toast('กรอกเนื้อหาโน้ตก่อน', 'error');
+        }
+
+        if (saveBtn.disabled) return;
+        saveBtn.disabled = true;
+        try {
+          if (remind_at && 'Notification' in window && Notification.permission === 'default') {
+            Notification.requestPermission();
+          }
+          const payload = { title, content, checklist, note_type: noteType, color: selectedColor, sticker: selectedSticker || null, tag, remind_at };
+          if (isEdit) {
+            payload.notified_at = null;
+            await DB.updateNote(existing.id, payload);
+            toast('แก้ไขโน้ตสำเร็จ ✓', 'success');
+          } else {
+            await DB.addNote(payload);
+            toast('เพิ่มโน้ตสำเร็จ ✓', 'success');
+          }
+          modalWrap.remove();
+          await renderNotes();
+        } catch (e) {
+          toast('บันทึกไม่สำเร็จ: ' + e.message, 'error');
+          saveBtn.disabled = false;
+        }
+      };
+    }
+
+    function startReminderWatcher() {
+      if (reminderInterval) return;
+      reminderInterval = setInterval(checkReminders, 30000);
+      checkReminders();
+    }
+    function checkReminders() {
+      if (!('Notification' in window) || Notification.permission !== 'granted') return;
+      const now = Date.now();
+      notesCache.forEach(n => {
+        if (n.remind_at && !n.notified_at && new Date(n.remind_at).getTime() <= now) {
+          try { new Notification('🔔 ' + (n.title || 'โน้ตเตือนความจำ'), { body: n.note_type === 'checklist' ? 'มีเช็คลิสต์ถึงกำหนด' : (n.content || ''), tag: n.id }); } catch (e) {}
+          n.notified_at = new Date().toISOString();
+          DB.markNotified(n.id).catch(() => {});
+        }
+      });
+    }
+
+    /* ============================================================
+       INIT
+       ============================================================ */
     if (!CONFIGURED) {
       app.innerHTML = `<div class="bg-danger-light border border-danger/30 text-danger rounded-2xl p-4 text-sm">
         ยังไม่ได้ตั้งค่า Supabase — กรุณาใส่ค่า <b>SUPABASE_URL</b> และ <b>SUPABASE_ANON_KEY</b> ที่ด้านบนของไฟล์ก่อนใช้งานจริง
       </div>`;
     } else {
-      render();
+      fabBtn.onclick = openAddModal;
+      renderShell();
+      renderJobs();
     }
   </script>
 </body>
