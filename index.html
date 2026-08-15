@@ -1117,8 +1117,8 @@ async removeShelfItem(productShelfId, productId, qty) {
     async function saveAudit(root, state) {
   const btn = root.querySelector('#save-audit');
   const entries = Object.entries(countCart);
-  const accounts = await DB.getAccounts().catch(() => []);
-  const businessAccount = pickRestockAccount(accounts);
+const accounts = await DB.getAccounts().catch(() => []);
+  const businessAccount = accounts.find(a => a.type === 'business') || accounts[0];
 
   // ค้นหารายการที่ "ของหาย" (actual < expected)
   const lostItems = entries.filter(([psId, c]) => c.actual < c.expected);
