@@ -204,7 +204,7 @@ const [ {data: prods}, {data: batches}, {data: pshelves}, {data: shelves}, {data
       supabase.from('buildings').select('*').order('name'),
       supabase.from('accounts').select('*').order('type'),
       supabase.from('transactions').select('*').order('created_at', {ascending: false}).limit(100),
-      supabase.from('stock_discrepancies').select('*').order('created_at', {ascending: false}).limit(100)
+      supabase.from('stock_discrepancies').select('*').order('detected_at', {ascending: false}).limit(100)
     ]);
     
     appData = { prods, batches, pshelves, shelves, bldgs, accs, txs, disc };
@@ -511,7 +511,7 @@ function renderDiscrepanciesTab() {
       <div class="bg-surface rounded-xl p-4 shadow-sm border border-hairline flex items-center justify-between">
         <div>
           <p class="font-medium text-sm">${p ? escapeHTML(p.name) : 'สินค้าทั่วไป'} <span class="text-xs text-error font-mono">(${d.diff_qty} ชิ้น)</span></p>
-          <p class="text-xs text-muted mt-0.5">เหตุผล: ${escapeHTML(d.reason || 'ไม่ระบุ')} | วันที่: ${new Date(d.created_at).toLocaleString('th-TH')}</p>
+          <p class="text-xs text-muted mt-0.5">เหตุผล: ${escapeHTML(d.reason || 'ไม่ระบุ')} | วันที่: ${new Date(d.detected_at).toLocaleString('th-TH')}</p>
           <div class="flex gap-3 mt-2">
             <span class="text-xs bg-hairline px-2 py-1 rounded">มูลค่าเงา: <b>฿${fmtMoney(d.value_at_selling_price)}</b></span>
             <span class="text-xs ${d.resolved_as ? 'bg-secondary/10 text-secondary' : 'bg-warning/10 text-warning'} px-2 py-1 rounded">${d.resolved_as ? 'เคลียร์แล้ว' : 'ยังไม่เคลียร์'}</span>

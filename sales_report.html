@@ -211,7 +211,7 @@ function render() {
   const allSoldList = Object.values(productStats).sort((a, b) => b.qty - a.qty);
   
   // 🔴 ข้อมูลใหม่: กรองเฉพาะของที่ระบุสาเหตุว่าพัง/หมดอายุ/ใช้เอง (ไม่นับ 'สูญหาย/ไม่ทราบสาเหตุ')
-  const knownLosses = filtered.filter(d => d.note && d.note !== 'สูญหาย/ไม่ทราบสาเหตุ' && d.note !== 'null' && d.note.trim() !== '');
+  const knownLosses = filtered.filter(d => d.reason && d.reason !== 'สูญหาย/ไม่ทราบสาเหตุ' && d.reason.trim() !== '');
 
   // 4. จัดอันดับทำเล
   const locStats = {};
@@ -325,7 +325,7 @@ function render() {
           <div class="flex items-center justify-between p-3">
             <div>
               <p class="text-sm font-medium text-danger-dark">${l.product_name}</p>
-              <p class="text-[10px] text-danger/70">${l.building_name} (ชั้น ${l.floor}) · สาเหตุ: ${l.note}</p>
+              <p class="text-[10px] text-danger/70">${l.building_name} (ชั้น ${l.floor}) · สาเหตุ: ${l.reason}</p>
             </div>
             <div class="text-right">
               <p class="font-display font-semibold tnum text-danger">${l.qty} ชิ้น</p>

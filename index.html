@@ -714,11 +714,20 @@ async removeShelfItem(productShelfId, productId, qty) {
         });
         if (error) throw error; return data;
       },
-      // 2. ดึงข้อมูล Analytics ขั้นสูง
+            // 2. ดึงข้อมูล Analytics ขั้นสูง (เดิม เก็บไว้เผื่อที่อื่นเรียกใช้ ไม่มีผลกระทบถ้าไม่ถูกเรียก)
       async getAnalyticsData() {
-        // ดึง Transaction ย้อนหลัง 7 วันเพื่อวาดกราฟ
         const txs = await this.getAllTransactions('week');
         return txs;
+      },
+      // ดึงธุรกรรมตามช่วงวันที่ + บัญชีที่เลือกได้อย่างอิสระ
+      async getTransactionsInRange(fromISO, toISO, accountId) {
+        let query = supabase.from('transactions').select('*').order('created_at', { ascending: true });
+        if (fromISO) query = query.gte('created_at', fromISO);
+        if (toISO) query = query.lte('created_at', toISO);
+        if (accountId && accountId !== 'all') query = query.eq('account_id', accountId);
+        const { data, error } = await query;
+        if (error) throw error;
+        return data;
       }
     };
 
@@ -2837,101 +2846,191 @@ async function removeItem(itemId) {
     /* ============================================================
        14) ADVANCED ANALYTICS DASHBOARD
        ============================================================ */
-    async function renderAnalytics(root) {
+        async function renderAnalytics(root, state) {
+      const rangeMode = state.rangeMode || '7d';
+      const customFrom = state.customFrom || '';
+      const customTo = state.customTo || '';
+      const accountId = state.accountId || 'all';
+
       root.innerHTML = `
     <div class="flex items-center gap-3 mb-5">
       <button id="an-back" class="press text-muted flex items-center justify-center w-9 h-9 rounded-full bg-surface border border-hairline shadow-sm">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
       </button>
-      <h1 class="font-display text-2xl font-semibold">สถิติเชิงลึก (7 วัน)</h1>
+      <h1 class="font-display text-2xl font-semibold">สถิติเชิงลึก</h1>
     </div>
 
-    <div class="bg-surface border border-hairline rounded-3xl p-4 shadow-sm mb-4 pop-in">
-      <h2 class="font-display font-medium text-sm mb-3">📈 แนวโน้มรายรับ vs รายจ่าย (7 วันล่าสุด)</h2>
-      <div class="relative w-full h-48">
-        <canvas id="trendChart"></canvas>
-      </div>
+    <div class="flex gap-2 overflow-x-auto no-scrollbar mb-3" id="an-range">
+      ${[['7d','7 วัน'],['30d','30 วัน'],['month','เดือนนี้'],['year','ปีนี้'],['custom','กำหนดเอง']].map(([k,l]) => `
+        <button data-range="${k}" class="press whitespace-nowrap text-xs font-medium px-4 py-2 rounded-full ${rangeMode===k ? 'bg-ink text-white' : 'bg-surface border border-hairline text-muted'}">${l}</button>
+      `).join('')}
     </div>
 
-    <div class="bg-surface border border-hairline rounded-3xl p-4 shadow-sm pop-in" style="animation-delay: 50ms;">
-      <h2 class="font-display font-medium text-sm mb-3">🍩 สัดส่วนรายจ่ายแยกตามหมวดหมู่</h2>
-      <div class="relative w-full h-48 flex justify-center">
-        <canvas id="expenseChart"></canvas>
-      </div>
+    <div id="an-custom-wrap" class="${rangeMode==='custom' ? '' : 'hidden'} grid grid-cols-2 gap-2 mb-3">
+      <input id="an-from" type="date" value="${customFrom}" class="text-sm bg-surface rounded-xl px-3 py-2.5 outline-none border border-hairline">
+      <input id="an-to" type="date" value="${customTo}" class="text-sm bg-surface rounded-xl px-3 py-2.5 outline-none border border-hairline">
     </div>
+
+    <select id="an-account" class="w-full text-sm bg-surface rounded-xl px-3 py-2.5 mb-4 outline-none border border-hairline font-medium shadow-sm">
+      <option value="all">👛 ดูรวมทุกบัญชี</option>
+    </select>
+
+    <div id="an-body">${skeleton('h-24')}<div class="mt-3">${skeleton('h-48')}</div></div>
   `;
 
       root.querySelector('#an-back').onclick = () => go('dashboard');
+      root.querySelectorAll('[data-range]').forEach(btn => btn.onclick = () => {
+        go('analytics', { ...state, rangeMode: btn.dataset.range });
+      });
+      const fromInput = root.querySelector('#an-from');
+      const toInput = root.querySelector('#an-to');
+      if (fromInput) fromInput.onchange = (e) => go('analytics', { ...state, rangeMode: 'custom', customFrom: e.target.value, customTo });
+      if (toInput) toInput.onchange = (e) => go('analytics', { ...state, rangeMode: 'custom', customFrom, customTo: e.target.value });
 
       try {
-        const txs = await DB.getAnalyticsData(); // ดึง tx ย้อนหลังสัปดาห์นึง
+        const accounts = await DB.getAccounts();
+        const accSelect = root.querySelector('#an-account');
+        accSelect.innerHTML = `<option value="all">👛 ดูรวมทุกบัญชี</option>` +
+          accounts.map(a => `<option value="${a.id}" ${a.id === accountId ? 'selected' : ''}>${a.type === 'business' ? '🏪' : '👤'} ${escapeHTML(a.name)}</option>`).join('');
+        accSelect.onchange = (e) => go('analytics', { ...state, accountId: e.target.value });
 
-        // 1. ประมวลผลข้อมูลสำหรับกราฟเส้น (รับ-จ่าย รายวัน)
-        const last7Days = [...Array(7)].map((_, i) => {
-          const d = new Date(); d.setDate(d.getDate() - i);
-          return d.toLocaleDateString('th-TH', { month: 'short', day: 'numeric' });
-        }).reverse();
-
-        const dailyIncome = Array(7).fill(0);
-        const dailyExpense = Array(7).fill(0);
-
-        txs.forEach(t => {
-          const dStr = new Date(t.created_at).toLocaleDateString('th-TH', { month: 'short', day: 'numeric' });
-          const idx = last7Days.indexOf(dStr);
-          if (idx !== -1) {
-            if (t.type === 'income') dailyIncome[idx] += t.amount;
-            if (t.type === 'expense') dailyExpense[idx] += t.amount;
-          }
-        });
-
-        // วาดกราฟเส้น Trend
-        new Chart(document.getElementById('trendChart'), {
-          type: 'line',
-          data: {
-            labels: last7Days,
-            datasets: [
-              { label: 'รายรับ', data: dailyIncome, borderColor: '#3FA34D', backgroundColor: '#3FA34D33', fill: true, tension: 0.4 },
-              { label: 'รายจ่าย', data: dailyExpense, borderColor: '#D9483F', backgroundColor: '#D9483F33', fill: true, tension: 0.4 }
-            ]
-          },
-          options: {
-            responsive: true, maintainAspectRatio: false,
-            plugins: { legend: { position: 'bottom', labels: { font: { family: 'Sarabun' } } } },
-            scales: { y: { beginAtZero: true, ticks: { font: { family: 'Sarabun' } } }, x: { ticks: { font: { family: 'Sarabun' } } } }
-          }
-        });
-
-        // 2. ประมวลผลข้อมูลสำหรับกราฟโดนัท (สัดส่วนหมวดหมู่รายจ่าย)
-        const expenses = txs.filter(t => t.type === 'expense');
-        const expByCategory = {};
-        expenses.forEach(t => { expByCategory[t.category] = (expByCategory[t.category] || 0) + t.amount; });
-
-        const expLabels = Object.keys(expByCategory);
-        const expData = Object.values(expByCategory);
-        const bgColors = ['#D9483F', '#F2A33C', '#145C52', '#6B7770', '#1B2420', '#D8DED2'];
-
-        new Chart(document.getElementById('expenseChart'), {
-          type: 'doughnut',
-          data: {
-            labels: expLabels.length ? expLabels : ['ไม่มีข้อมูล'],
-            datasets: [{
-              data: expData.length ? expData : [1],
-              backgroundColor: expData.length ? bgColors : ['#E4E7E0'],
-              borderWidth: 2
-            }]
-          },
-          options: {
-            responsive: true, maintainAspectRatio: false,
-            plugins: {
-              legend: { position: 'right', labels: { font: { family: 'Sarabun' }, boxWidth: 12 } }
-            },
-            cutout: '65%'
-          }
-        });
-
+        const { from, to } = computeAnalyticsRange(rangeMode, customFrom, customTo);
+        if (!from) {
+          root.querySelector('#an-body').innerHTML = `<div class="text-center py-10 text-muted text-sm">เลือกวันที่เริ่มต้นก่อน</div>`;
+          return;
+        }
+        const txs = await DB.getTransactionsInRange(from.toISOString(), to.toISOString(), accountId);
+        renderAnalyticsBody(root.querySelector('#an-body'), txs, from, to);
       } catch (e) {
-        toast('โหลดข้อมูลสถิติไม่สำเร็จ', 'error');
+        root.querySelector('#an-body').innerHTML = `<div class="text-center py-8 text-danger text-sm">โหลดข้อมูลไม่สำเร็จ: ${escapeHTML(e.message)}</div>`;
       }
+    }
+
+    function computeAnalyticsRange(mode, customFrom, customTo) {
+      const now = new Date();
+      let from, to = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+      if (mode === '7d') { from = new Date(now); from.setDate(from.getDate() - 6); from.setHours(0,0,0,0); }
+      else if (mode === '30d') { from = new Date(now); from.setDate(from.getDate() - 29); from.setHours(0,0,0,0); }
+      else if (mode === 'month') { from = new Date(now.getFullYear(), now.getMonth(), 1); }
+      else if (mode === 'year') { from = new Date(now.getFullYear(), 0, 1); }
+      else if (mode === 'custom') {
+        from = customFrom ? new Date(customFrom + 'T00:00:00') : null;
+        to = customTo ? new Date(customTo + 'T23:59:59') : to;
+      }
+      return { from, to };
+    }
+
+    function buildAnalyticsBuckets(from, to) {
+      const dayDiff = Math.ceil((to - from) / (1000*60*60*24)) + 1;
+      let granularity = 'day';
+      if (dayDiff > 180) granularity = 'month';
+      else if (dayDiff > 45) granularity = 'week';
+
+      const buckets = [];
+      if (granularity === 'day') {
+        let cur = new Date(from);
+        while (cur <= to) {
+          const start = new Date(cur.getFullYear(), cur.getMonth(), cur.getDate(), 0,0,0,0);
+          const end = new Date(cur.getFullYear(), cur.getMonth(), cur.getDate(), 23,59,59,999);
+          buckets.push({ label: start.toLocaleDateString('th-TH',{day:'numeric',month:'short'}), start, end });
+          cur.setDate(cur.getDate()+1);
+        }
+      } else if (granularity === 'week') {
+        let cur = new Date(from);
+        while (cur <= to) {
+          const start = new Date(cur.getFullYear(), cur.getMonth(), cur.getDate(), 0,0,0,0);
+          const end = new Date(start); end.setDate(end.getDate()+6); end.setHours(23,59,59,999);
+          buckets.push({ label: start.toLocaleDateString('th-TH',{day:'numeric',month:'short'}) + '-' + end.toLocaleDateString('th-TH',{day:'numeric',month:'short'}), start, end });
+          cur.setDate(cur.getDate()+7);
+        }
+      } else {
+        let cur = new Date(from.getFullYear(), from.getMonth(), 1);
+        while (cur <= to) {
+          const start = new Date(cur.getFullYear(), cur.getMonth(), 1, 0,0,0,0);
+          const end = new Date(cur.getFullYear(), cur.getMonth()+1, 0, 23,59,59,999);
+          buckets.push({ label: start.toLocaleDateString('th-TH',{month:'short',year:'2-digit'}), start, end });
+          cur.setMonth(cur.getMonth()+1);
+        }
+      }
+      return buckets;
+    }
+
+    function renderAnalyticsBody(body, txs, from, to) {
+      const totalIncome = txs.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
+      const totalExpense = txs.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
+      const net = totalIncome - totalExpense;
+
+      body.innerHTML = `
+    <div class="grid grid-cols-3 gap-2 mb-4">
+      <div class="bg-surface rounded-2xl p-3 border border-hairline">
+        <p class="text-[10px] text-muted mb-1">รายรับ</p>
+        <p class="font-display font-semibold text-sm tnum text-success">+฿${fmtMoney(totalIncome)}</p>
+      </div>
+      <div class="bg-surface rounded-2xl p-3 border border-hairline">
+        <p class="text-[10px] text-muted mb-1">รายจ่าย</p>
+        <p class="font-display font-semibold text-sm tnum text-danger">-฿${fmtMoney(totalExpense)}</p>
+      </div>
+      <div class="bg-surface rounded-2xl p-3 border border-hairline">
+        <p class="text-[10px] text-muted mb-1">กำไรสุทธิ</p>
+        <p class="font-display font-semibold text-sm tnum ${net>=0?'text-primary':'text-danger'}">${net>=0?'+':''}฿${fmtMoney(net)}</p>
+      </div>
+    </div>
+
+    <div class="bg-surface border border-hairline rounded-3xl p-4 shadow-sm mb-4 pop-in">
+      <h2 class="font-display font-medium text-sm mb-3">📈 แนวโน้มรายรับ vs รายจ่าย</h2>
+      <div class="relative w-full h-48"><canvas id="trendChart"></canvas></div>
+    </div>
+
+    <div class="bg-surface border border-hairline rounded-3xl p-4 shadow-sm pop-in">
+      <h2 class="font-display font-medium text-sm mb-3">🍩 สัดส่วนรายจ่ายแยกตามหมวดหมู่</h2>
+      <div class="relative w-full h-48 flex justify-center"><canvas id="expenseChart"></canvas></div>
+    </div>
+  `;
+
+      if (txs.length === 0) {
+        body.insertAdjacentHTML('beforeend', `<p class="text-center text-muted text-sm py-4">ไม่มีธุรกรรมในช่วงเวลานี้</p>`);
+        return;
+      }
+
+      const buckets = buildAnalyticsBuckets(from, to);
+      const dailyIncome = buckets.map(b => txs.filter(t => t.type==='income' && new Date(t.created_at) >= b.start && new Date(t.created_at) <= b.end).reduce((s,t)=>s+t.amount,0));
+      const dailyExpense = buckets.map(b => txs.filter(t => t.type==='expense' && new Date(t.created_at) >= b.start && new Date(t.created_at) <= b.end).reduce((s,t)=>s+t.amount,0));
+
+      new Chart(document.getElementById('trendChart'), {
+        type: 'line',
+        data: {
+          labels: buckets.map(b=>b.label),
+          datasets: [
+            { label: 'รายรับ', data: dailyIncome, borderColor: '#3FA34D', backgroundColor: '#3FA34D33', fill: true, tension: 0.4 },
+            { label: 'รายจ่าย', data: dailyExpense, borderColor: '#D9483F', backgroundColor: '#D9483F33', fill: true, tension: 0.4 }
+          ]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { position: 'bottom', labels: { font: { family: 'Sarabun' } } } },
+          scales: { y: { beginAtZero: true, ticks: { font: { family: 'Sarabun' } } }, x: { ticks: { font: { family: 'Sarabun' }, maxRotation: 0, autoSkip: true, maxTicksLimit: 8 } } }
+        }
+      });
+
+      const expenses = txs.filter(t => t.type === 'expense');
+      const expByCategory = {};
+      expenses.forEach(t => { expByCategory[t.category] = (expByCategory[t.category] || 0) + t.amount; });
+      const expLabels = Object.keys(expByCategory);
+      const expData = Object.values(expByCategory);
+      const bgColors = ['#D9483F', '#F2A33C', '#145C52', '#6B7770', '#1B2420', '#D8DED2', '#8E6C88', '#4B626A'];
+
+      new Chart(document.getElementById('expenseChart'), {
+        type: 'doughnut',
+        data: {
+          labels: expLabels.length ? expLabels : ['ไม่มีข้อมูล'],
+          datasets: [{ data: expData.length ? expData : [1], backgroundColor: expData.length ? bgColors : ['#E4E7E0'], borderWidth: 2 }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { position: 'right', labels: { font: { family: 'Sarabun' }, boxWidth: 12 } } },
+          cutout: '65%'
+        }
+      });
     }
   </script>
 </body>
