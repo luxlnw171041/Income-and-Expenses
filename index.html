@@ -328,7 +328,6 @@
        ============================================================ */
     const SUPABASE_URL = 'https://dfemavcrzpmmgqqjrxvz.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRmZW1hdmNyenBtbWdxcWpyeHZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU2ODY4NTEsImV4cCI6MjEwMTI2Mjg1MX0.JYsRkjRwbAqKxqB9MT5iMDOeh5zh087sWmKo_Jx1cbc';
-
     const CONFIGURED = !SUPABASE_URL.includes('SUPABASE_URL') && !!SUPABASE_ANON_KEY && !SUPABASE_ANON_KEY.includes('YOUR_SUPABASE');
     const supabase = CONFIGURED ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
@@ -2107,8 +2106,10 @@ const accounts = await DB.getAccounts().catch(() => []);
       <button data-shelf-pill="${s.id}" class="press px-5 py-2 rounded-full text-sm font-medium whitespace-nowrap ${s.id === selShelf ? 'bg-primary-light text-primary border border-primary/30' : 'bg-surface border border-hairline text-muted'}">ชั้น ${s.floor}</button>
     `).join('') || `<span class="text-xs text-muted py-2">ยังไม่มีชั้นวางในตึกนี้</span>`;
     body.querySelectorAll('[data-shelf-pill]').forEach(btn => btn.onclick = async () => {
+      // อัปเดต state ก่อน แล้ว render ปุ่มชั้นใหม่ เพื่อให้สี Active
+      // ติดกับชั้นที่ผู้ใช้กดจริง ไม่ค้างอยู่ที่ปุ่มแรก
       selShelf = btn.dataset.shelfPill;
-      await loadItems();
+      await loadShelves();
     });
     await loadItems();
   }
