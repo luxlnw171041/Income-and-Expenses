@@ -1,6 +1,6 @@
 {
-  "name": "รายรับ-รายจ่าย",
-  "short_name": "รายรับ-รายจ่าย",
+  "name": "Must go on",
+  "short_name": "Must go on",
   "description": "ระบบจัดการร้านค้าแบบ Self-Service / Honesty Shop นับสต็อก บันทึกรายรับ-รายจ่าย",
   "start_url": "./index.html",
   "scope": "./",
