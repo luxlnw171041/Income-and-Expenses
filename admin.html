@@ -152,6 +152,18 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 const CONFIGURED = !SUPABASE_URL.includes('YOUR_') && !!SUPABASE_ANON_KEY;
 const supabase = CONFIGURED ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
+// ป้องกันการโหลด admin.html เก่าที่ค้างอยู่ใน Service Worker Cache
+if ('caches' in window) {
+  caches.keys().then(keys => {
+    keys.forEach(k => {
+      caches.open(k).then(cache => {
+        cache.delete(window.location.href);
+        cache.delete(window.location.pathname);
+      });
+    });
+  });
+}
+
 // --- UTILS ---
 function escapeHTML(str) {
   if (!str) return '';
@@ -251,7 +263,7 @@ async function loadData() {
       supabase.from('accounts').select('*').order('type'),
       supabase.from('transactions').select('*', { count: 'exact' }).order('created_at', {ascending: false}).limit(100),
       supabase.from('stock_discrepancies').select('*', { count: 'exact' }).order('detected_at', {ascending: false}).limit(100),
-      supabase.from('notes').select('*').catch(() => ({ data: [] }))
+      supabase.from('notes').select('*')
     ]);
     
     appData = { 

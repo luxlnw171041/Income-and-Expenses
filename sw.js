@@ -1,5 +1,5 @@
-const CACHE_NAME = 'Taii-shop-v4.2.3'; //
-const SHELL_FILES = ['./', './index.html', './manifest.json']; //[cite: 2]
+const CACHE_NAME = 'Taii-shop-v4.2.4';
+const SHELL_FILES = ['./', './index.html', './manifest.json'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -23,6 +23,9 @@ self.addEventListener('fetch', (event) => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return; // let Supabase/API/CDN requests go straight to network
+
+  // Never cache admin pages - always fetch latest from network
+  if (url.pathname.includes('admin')) return;
 
   event.respondWith(
     caches.match(req).then((cached) => {
