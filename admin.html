@@ -65,19 +65,32 @@
 <header class="bg-primary-dark text-white shadow-md z-40 shrink-0">
   <div class="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
     <div class="flex items-center gap-3">
+      <a href="index.html" class="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors text-white" title="กลับหน้าร้านค้า">
+        <span class="material-symbols-outlined text-[20px]">arrow_back</span>
+      </a>
       <span class="material-symbols-outlined text-[28px]">admin_panel_settings</span>
       <h1 class="font-display text-xl font-semibold tracking-wide">Admin Dashboard</h1>
     </div>
-    <div class="text-xs bg-white/20 px-3 py-1.5 rounded-full font-medium">แก้ไขข้อมูลโดยตรง</div>
+    <div class="flex items-center gap-2">
+      <button onclick="switchTab('reset')" class="flex items-center gap-1.5 bg-error hover:bg-error/90 text-white text-xs px-3 py-1.5 rounded-full font-medium shadow transition-all active:scale-95" title="เริ่มต้นเทอมใหม่">
+        <span class="material-symbols-outlined text-[16px]">restart_alt</span>
+        <span>รีเซ็ตเทอมใหม่</span>
+      </button>
+      <div class="text-xs bg-white/20 px-3 py-1.5 rounded-full font-medium hidden sm:block">แก้ไขข้อมูลโดยตรง</div>
+    </div>
   </div>
   
   <!-- Tabs -->
   <div class="max-w-4xl mx-auto px-2 flex overflow-x-auto hide-scrollbar gap-1 pb-2">
-  <button data-tab="stock" class="tab-btn active font-display font-medium text-sm px-4 py-2 rounded-lg bg-white text-primary-dark whitespace-nowrap transition-colors">สต็อก & สินค้า</button>
+    <button data-tab="stock" class="tab-btn active font-display font-medium text-sm px-4 py-2 rounded-lg bg-white text-primary-dark whitespace-nowrap transition-colors">สต็อก & สินค้า</button>
     <button data-tab="shelves" class="tab-btn font-display font-medium text-sm px-4 py-2 rounded-lg text-white/80 hover:bg-white/10 whitespace-nowrap transition-colors">จุดวางสินค้า</button>
     <button data-tab="finance" class="tab-btn font-display font-medium text-sm px-4 py-2 rounded-lg text-white/80 hover:bg-white/10 whitespace-nowrap transition-colors">การเงิน & บัญชี</button>
     <button data-tab="discrepancies" class="tab-btn font-display font-medium text-sm px-4 py-2 rounded-lg text-white/80 hover:bg-white/10 whitespace-nowrap transition-colors">ส่วนต่างสต็อก (Shadow)</button>
     <button data-tab="master" class="tab-btn font-display font-medium text-sm px-4 py-2 rounded-lg text-white/80 hover:bg-white/10 whitespace-nowrap transition-colors">ตึก & ชั้นวาง</button>
+    <button data-tab="reset" class="tab-btn font-display font-medium text-sm px-4 py-2 rounded-lg text-white/80 hover:bg-white/10 whitespace-nowrap transition-colors flex items-center gap-1.5 border border-error/40 bg-error/15">
+      <span class="material-symbols-outlined text-[18px] text-error">restart_alt</span>
+      <span>เริ่มต้นเทอมใหม่ (Reset)</span>
+    </button>
   </div>
 </header>
 
@@ -101,6 +114,29 @@
     <div class="p-4 border-t border-hairline bg-background flex gap-3">
       <button onclick="closeModal()" class="flex-1 py-2.5 rounded-xl font-medium text-muted bg-surface border border-hairline">ยกเลิก</button>
       <button id="modal-save-btn" class="flex-1 py-2.5 rounded-xl font-medium text-white bg-primary shadow-sm active:scale-95 transition-transform">บันทึก</button>
+    </div>
+</div>
+
+<!-- Reset Progress Modal -->
+<div id="reset-progress-modal" class="fixed inset-0 z-[150] bg-ink/60 backdrop-blur-sm flex items-center justify-center p-4 modal-hidden">
+  <div class="bg-surface w-full max-w-md rounded-2xl shadow-2xl p-6 flex flex-col">
+    <div class="text-center mb-4">
+      <div id="progress-icon-wrap" class="w-14 h-14 rounded-full bg-primary-light text-primary mx-auto flex items-center justify-center mb-3">
+        <span id="progress-main-icon" class="material-symbols-outlined text-[32px] animate-spin">sync</span>
+      </div>
+      <h3 id="progress-modal-title" class="font-display font-bold text-lg text-primary-dark">กำลังดำเนินการเริ่มต้นเทอมใหม่</h3>
+      <p id="progress-modal-sub" class="text-xs text-muted mt-1">ระบบกำลังสำรองข้อมูลและปรับปรุงฐานข้อมูล โปรดอย่าปิดหน้าต่างนี้</p>
+    </div>
+
+    <!-- Step Items -->
+    <div id="progress-steps" class="space-y-1.5 py-3 border-y border-hairline text-xs font-medium max-h-60 overflow-y-auto">
+      <!-- Steps will be injected dynamically -->
+    </div>
+
+    <div class="mt-4 flex">
+      <button id="btn-progress-done" onclick="finishResetModal()" disabled class="w-full py-2.5 rounded-xl font-medium text-white bg-primary opacity-40 cursor-not-allowed transition-all">
+        กำลังดำเนินการ...
+      </button>
     </div>
   </div>
 </div>
@@ -196,18 +232,41 @@ async function loadData() {
   document.getElementById('main-content').innerHTML = '<div class="text-center py-10 text-muted flex flex-col items-center"><span class="material-symbols-outlined animate-spin text-[32px] mb-2">sync</span> กำลังโหลดข้อมูล...</div>';
   
   try {
-const [ {data: prods}, {data: batches}, {data: pshelves}, {data: shelves}, {data: bldgs}, {data: accs}, {data: txs}, {data: disc} ] = await Promise.all([
+    const [ 
+      {data: prods}, 
+      {data: batches}, 
+      {data: pshelves}, 
+      {data: shelves}, 
+      {data: bldgs}, 
+      {data: accs}, 
+      {data: txs, count: txCount}, 
+      {data: disc, count: discCount},
+      notesRes
+    ] = await Promise.all([
       supabase.from('products').select('*').order('name'),
       supabase.from('stock_batches').select('*').order('created_at', {ascending: false}),
       supabase.from('product_shelves').select('*'),
       supabase.from('shelves').select('*').order('floor'),
       supabase.from('buildings').select('*').order('name'),
       supabase.from('accounts').select('*').order('type'),
-      supabase.from('transactions').select('*').order('created_at', {ascending: false}).limit(100),
-      supabase.from('stock_discrepancies').select('*').order('detected_at', {ascending: false}).limit(100)
+      supabase.from('transactions').select('*', { count: 'exact' }).order('created_at', {ascending: false}).limit(100),
+      supabase.from('stock_discrepancies').select('*', { count: 'exact' }).order('detected_at', {ascending: false}).limit(100),
+      supabase.from('notes').select('*').catch(() => ({ data: [] }))
     ]);
     
-    appData = { prods, batches, pshelves, shelves, bldgs, accs, txs, disc };
+    appData = { 
+      prods: prods || [], 
+      batches: batches || [], 
+      pshelves: pshelves || [], 
+      shelves: shelves || [], 
+      bldgs: bldgs || [], 
+      accs: accs || [], 
+      txs: txs || [], 
+      totalTxCount: txCount ?? (txs ? txs.length : 0),
+      disc: disc || [],
+      totalDiscCount: discCount ?? (disc ? disc.length : 0),
+      notes: notesRes?.data || []
+    };
     renderTab();
   } catch (e) {
     toast('โหลดข้อมูลไม่สำเร็จ: ' + e.message, 'error');
@@ -222,6 +281,10 @@ function renderTab() {
   else if (currentTab === 'finance') main.innerHTML = renderFinanceTab();
   else if (currentTab === 'discrepancies') main.innerHTML = renderDiscrepanciesTab();
   else if (currentTab === 'master') main.innerHTML = renderMasterTab();
+  else if (currentTab === 'reset') {
+    main.innerHTML = renderResetTab();
+    renderPastHistory();
+  }
 }
 
 // 1. สต็อก & สินค้า
@@ -481,21 +544,29 @@ window.deleteShelfMaster = async (id) => {
 };
 
 
-// --- INITIALIZATION ---
-document.querySelectorAll('.tab-btn').forEach(btn => {
-  btn.addEventListener('click', (e) => {
-    document.querySelectorAll('.tab-btn').forEach(b => {
+// --- TAB SWITCHING & INITIALIZATION ---
+window.switchTab = (tabName) => {
+  currentTab = tabName;
+  document.querySelectorAll('.tab-btn').forEach(b => {
+    if (b.dataset.tab === tabName) {
+      b.classList.remove('text-white/80');
+      b.classList.add('bg-white', 'text-primary-dark');
+    } else {
       b.classList.remove('bg-white', 'text-primary-dark');
       b.classList.add('text-white/80');
-    });
-    e.target.classList.remove('text-white/80');
-    e.target.classList.add('bg-white', 'text-primary-dark');
-    
-    currentTab = e.target.dataset.tab;
-    renderTab();
+    }
+  });
+  renderTab();
+};
+
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    const tab = e.currentTarget.dataset.tab;
+    if (tab) window.switchTab(tab);
   });
 });
 
+// 5. ส่วนต่างสต็อกและยอดเงินเงา
 function renderDiscrepanciesTab() {
   let html = `<div class="flex justify-between items-center mb-4">
                 <h2 class="font-display text-lg font-semibold">ส่วนต่างสต็อกและยอดเงินเงา (Discrepancies)</h2>
@@ -503,7 +574,6 @@ function renderDiscrepanciesTab() {
               </div>
               <div class="space-y-3">`;
               
-  // แก้ไข: ใส่ ( ... || []) ดักจับกรณีดึงข้อมูลมาได้เป็น null
   (appData.disc || []).forEach(d => {
     const ps = appData.pshelves.find(x => x.id === d.product_shelf_id);
     const p = ps ? appData.prods.find(x => x.id === ps.product_id) : null;
@@ -552,6 +622,690 @@ window.deleteDiscrepancy = async (id) => {
   toast('ลบรายการส่วนต่างสำเร็จ', 'success');
   loadData();
 };
+
+// ============================================================
+// 6. ระบบรีเซ็ตเริ่มต้นเทอมใหม่ (SEMESTER RESET & BACKUP)
+// ============================================================
+
+// ดาวน์โหลดข้อมูลเป็นไฟล์ JSON
+function downloadJSON(data, filename) {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+// ดึงข้อมูลทั้งหมดในตาราง (รองรับ pagination มากกว่า 1,000 รายการ)
+async function fetchAllFromTable(tableName) {
+  let all = [];
+  let page = 0;
+  const pageSize = 1000;
+  while (true) {
+    const from = page * pageSize;
+    const to = from + pageSize - 1;
+    const { data, error } = await supabase
+      .from(tableName)
+      .select('*')
+      .range(from, to);
+    if (error) {
+      console.warn(`Error fetching ${tableName}:`, error);
+      break;
+    }
+    if (!data || data.length === 0) break;
+    all.push(...data);
+    if (data.length < pageSize) break;
+    page++;
+  }
+  return all;
+}
+
+// ล้างข้อมูลในตารางทั้งหมดอย่างปลอดภัย
+async function deleteAllFromTable(tableName) {
+  let attempts = 0;
+  while (attempts < 10) {
+    attempts++;
+    const { error } = await supabase.from(tableName).delete().not('id', 'is', null);
+    if (error) throw new Error(`ไม่สามารถลบข้อมูลในตาราง ${tableName}: ${error.message}`);
+    
+    // ตรวจสอบว่ายังมีเรคคอร์ดหลงเหลือหรือไม่
+    const { count, error: cErr } = await supabase.from(tableName).select('id', { count: 'exact', head: true });
+    if (cErr || !count || count === 0) break;
+  }
+}
+
+// 6.1 หน้าจอแสดงผลระบบรีเซ็ตเริ่มต้นเทอมใหม่
+function renderResetTab() {
+  const totalBalance = (appData.accs || []).reduce((sum, a) => sum + Number(a.balance || 0), 0);
+  const totalTxCount = appData.totalTxCount ?? (appData.txs || []).length;
+  const totalDiscCount = appData.totalDiscCount ?? (appData.disc || []).length;
+  const totalBatchQty = (appData.batches || []).reduce((sum, b) => sum + Number(b.remaining_qty || 0), 0);
+  const totalShelfQty = (appData.pshelves || []).reduce((sum, ps) => sum + Number(ps.quantity || 0), 0);
+
+  const defaultTermName = `เทอมใหม่_${new Date().getFullYear() + 543}_${(new Date().getMonth() + 1).toString().padStart(2, '0')}`;
+
+  return `
+    <div class="space-y-6">
+      <!-- Banner -->
+      <div class="bg-gradient-to-r from-primary-dark to-primary text-white rounded-2xl p-5 shadow-sm relative overflow-hidden">
+        <div class="relative z-10">
+          <div class="inline-flex items-center gap-1.5 bg-white/20 px-3 py-1 rounded-full text-xs font-medium mb-3">
+            <span class="material-symbols-outlined text-[16px]">school</span>
+            <span>ระบบเปลี่ยนภาคการศึกษา / เทอมใหม่</span>
+          </div>
+          <h2 class="font-display text-2xl font-bold tracking-wide">รีเซ็ตระบบเริ่มต้นเทอมใหม่</h2>
+          <p class="text-white/80 text-sm mt-1 max-w-xl">
+            ล้างยอดเงินคงเหลือ, ประวัติรายรับ-รายจ่าย, สต็อกสินค้าคงคลัง และของหาย เพื่อเริ่มต้นบันทึกข้อมูลเทอมใหม่ 
+            โดยยังคง<b>โครงสร้างตึก, ชั้นวาง และรายการแคตตาล็อกสินค้า</b>ไว้เหมือนเดิม
+          </p>
+        </div>
+        <span class="material-symbols-outlined text-[130px] text-white/10 absolute -right-4 -bottom-6 pointer-events-none select-none">restart_alt</span>
+      </div>
+
+      <!-- Current Snapshot Stats -->
+      <div>
+        <h3 class="font-display font-semibold text-base mb-3 flex items-center gap-2">
+          <span class="material-symbols-outlined text-primary text-[20px]">analytics</span>
+          สรุปข้อมูลของเทอมปัจจุบันที่จะถูกปิดรอบ
+        </h3>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div class="bg-surface rounded-xl p-3 border border-hairline shadow-sm">
+            <p class="text-xs text-muted">ยอดเงินรวมในบัญชี</p>
+            <p class="font-display font-bold text-lg text-primary-dark mt-0.5">฿${fmtMoney(totalBalance)}</p>
+            <p class="text-[11px] text-muted mt-1">${(appData.accs || []).length} บัญชี (จะปรับเป็น ฿0)</p>
+          </div>
+          <div class="bg-surface rounded-xl p-3 border border-hairline shadow-sm">
+            <p class="text-xs text-muted">ธุรกรรมรายรับ-รายจ่าย</p>
+            <p class="font-display font-bold text-lg text-ink mt-0.5">${totalTxCount.toLocaleString()} รายการ</p>
+            <p class="text-[11px] text-muted mt-1">ประวัติเดิมจะถูกล้าง</p>
+          </div>
+          <div class="bg-surface rounded-xl p-3 border border-hairline shadow-sm">
+            <p class="text-xs text-muted">สต็อกในคลัง (Batches)</p>
+            <p class="font-display font-bold text-lg text-ink mt-0.5">${(appData.batches || []).length} ล็อต</p>
+            <p class="text-[11px] text-muted mt-1">คงเหลือ ${totalBatchQty} ชิ้น</p>
+          </div>
+          <div class="bg-surface rounded-xl p-3 border border-hairline shadow-sm">
+            <p class="text-xs text-muted">สินค้าที่วางบนชั้น</p>
+            <p class="font-display font-bold text-lg text-ink mt-0.5">${(appData.pshelves || []).length} จุด</p>
+            <p class="text-[11px] text-muted mt-1">บนชั้นรวม ${totalShelfQty} ชิ้น</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Comparison Card: Preserved vs Reset -->
+      <div class="bg-surface rounded-2xl border border-hairline shadow-sm overflow-hidden">
+        <div class="p-4 bg-background border-b border-hairline flex items-center justify-between">
+          <h3 class="font-display font-semibold text-sm text-ink flex items-center gap-2">
+            <span class="material-symbols-outlined text-[20px]">checklist</span>
+            รายละเอียดการเปลี่ยนแปลงข้อมูล
+          </h3>
+          <span class="text-xs text-muted">ตรวจสอบความถูกต้อง</span>
+        </div>
+        <div class="grid sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-hairline">
+          <!-- Preserved -->
+          <div class="p-4 space-y-3">
+            <div class="flex items-center gap-2 text-secondary font-medium text-sm pb-1 border-b border-hairline/60">
+              <span class="material-symbols-outlined text-[20px]">check_circle</span>
+              <span>ข้อมูลที่ยังเก็บไว้คงเดิม (Preserved)</span>
+            </div>
+            <ul class="text-xs space-y-2.5 text-ink">
+              <li class="flex items-start gap-2">
+                <span class="material-symbols-outlined text-[16px] text-secondary shrink-0 mt-0.5">apartment</span>
+                <div>
+                  <p class="font-medium">ตึกและชั้นวางทั้งหมด (${(appData.bldgs || []).length} ตึก, ${(appData.shelves || []).length} ชั้น)</p>
+                  <p class="text-[11px] text-muted">โครงสร้างสถานที่และชั้นวางเดิมยังคงอยู่ครบถ้วน ไม่มีการลบ</p>
+                </div>
+              </li>
+              <li class="flex items-start gap-2">
+                <span class="material-symbols-outlined text-[16px] text-secondary shrink-0 mt-0.5">inventory_2</span>
+                <div>
+                  <p class="font-medium">รายการสินค้าในระบบ (${(appData.prods || []).length} รายการ)</p>
+                  <p class="text-[11px] text-muted">ชื่อสินค้า, ราคาขาย, รูปภาพ, ค่าเตือนขั้นต่ำ อยู่ครบ (ไม่เก็บจำนวนคงเหลือ)</p>
+                </div>
+              </li>
+              <li class="flex items-start gap-2">
+                <span class="material-symbols-outlined text-[16px] text-secondary shrink-0 mt-0.5">account_balance_wallet</span>
+                <div>
+                  <p class="font-medium">รายชื่อบัญชีการเงิน (${(appData.accs || []).length} บัญชี)</p>
+                  <p class="text-[11px] text-muted">รายชื่อบัญชีคงอยู่ แต่ยอดเงินจะเริ่มต้นนับใหม่</p>
+                </div>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Reset -->
+          <div class="p-4 space-y-3 bg-error/5">
+            <div class="flex items-center gap-2 text-error font-medium text-sm pb-1 border-b border-error/10">
+              <span class="material-symbols-outlined text-[20px]">restart_alt</span>
+              <span>ข้อมูลที่จะรีเซ็ต / เคลียร์เริ่มต้นใหม่</span>
+            </div>
+            <ul class="text-xs space-y-2.5 text-ink">
+              <li class="flex items-start gap-2">
+                <span class="material-symbols-outlined text-[16px] text-error shrink-0 mt-0.5">payments</span>
+                <div>
+                  <p class="font-medium">ยอดเงินในบัญชี</p>
+                  <p class="text-[11px] text-muted">ปรับเป็น <b>฿0.00</b> ทุกบัญชี เพื่อเริ่มรับเงินเทอมใหม่</p>
+                </div>
+              </li>
+              <li class="flex items-start gap-2">
+                <span class="material-symbols-outlined text-[16px] text-error shrink-0 mt-0.5">receipt_long</span>
+                <div>
+                  <p class="font-medium">ประวัติรายรับ-รายจ่าย</p>
+                  <p class="text-[11px] text-muted">ล้างประวัติธุรกรรมทั้งหมด (${totalTxCount.toLocaleString()} รายการ)</p>
+                </div>
+              </li>
+              <li class="flex items-start gap-2">
+                <span class="material-symbols-outlined text-[16px] text-error shrink-0 mt-0.5">shelves</span>
+                <div>
+                  <p class="font-medium">จำนวนสินค้าในสต็อกและบนชั้นวาง</p>
+                  <p class="text-[11px] text-muted">สต็อกคลัง (Batches) = 0, จำนวนบนชั้นปรับเป็น 0 ชิ้น (ไม่เก็บจำนวนเดิม)</p>
+                </div>
+              </li>
+              <li class="flex items-start gap-2">
+                <span class="material-symbols-outlined text-[16px] text-error shrink-0 mt-0.5">warning</span>
+                <div>
+                  <p class="font-medium">ประวัติของหายและส่วนต่างสต็อก</p>
+                  <p class="text-[11px] text-muted">ล้างประวัติเดิมทั้งหมด (${totalDiscCount.toLocaleString()} รายการ)</p>
+                </div>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Backup Card -->
+      <div class="bg-primary-light/40 rounded-2xl border border-primary/20 p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div class="flex items-start gap-3">
+          <div class="w-10 h-10 rounded-xl bg-primary text-white flex items-center justify-center shrink-0 shadow-sm">
+            <span class="material-symbols-outlined text-[22px]">cloud_download</span>
+          </div>
+          <div>
+            <h4 class="font-display font-semibold text-sm text-primary-dark">ระบบสำรองข้อมูลอัตโนมัติ (Data Backup)</h4>
+            <p class="text-xs text-muted mt-0.5">
+              ไม่ต้องกังวลเรื่องข้อมูลสูญหาย เมื่อกดยืนยัน ระบบจะสร้างและดาวน์โหลดไฟล์ <code>.json</code> สำรองข้อมูลทั้งหมดลงเครื่องทันทีก่อนจะล้างข้อมูลเดิม
+            </p>
+          </div>
+        </div>
+        <button onclick="downloadBackupNow()" class="shrink-0 bg-surface border border-primary/30 hover:bg-primary-light text-primary text-xs font-medium px-4 py-2.5 rounded-xl flex items-center gap-1.5 shadow-sm transition-colors active:scale-95">
+          <span class="material-symbols-outlined text-[16px]">download</span>
+          <span>ดาวน์โหลด Backup ตอนนี้</span>
+        </button>
+      </div>
+
+      <!-- Options & Confirmation -->
+      <div class="bg-surface rounded-2xl border border-hairline shadow-sm p-5 space-y-4">
+        <h3 class="font-display font-semibold text-base text-ink flex items-center gap-2">
+          <span class="material-symbols-outlined text-warning text-[20px]">tune</span>
+          การตั้งค่าเริ่มต้นเทอมใหม่
+        </h3>
+
+        <!-- Term Name -->
+        <div>
+          <label class="block text-xs font-medium text-muted mb-1">ชื่อเทอม / หมายเหตุการปิดรอบ (ใช้ตั้งชื่อไฟล์ Backup และบันทึกประวัติ)</label>
+          <input id="reset-term-name" type="text" value="${escapeHTML(defaultTermName)}" class="w-full bg-background rounded-xl px-3.5 py-2.5 text-sm font-medium">
+        </div>
+
+        <!-- Shelf Mode Radio -->
+        <div>
+          <label class="block text-xs font-medium text-muted mb-2">การจัดการสินค้าบนชั้นวาง (Product Shelves)</label>
+          <div class="space-y-2">
+            <label class="flex items-start gap-2.5 p-3 rounded-xl border border-hairline hover:bg-background cursor-pointer transition-colors bg-primary-light/20 border-primary/30">
+              <input type="radio" name="shelf-mode" value="reset_qty" checked class="mt-0.5 text-primary">
+              <div>
+                <p class="text-sm font-medium text-ink">รีเซ็ตจำนวนสินค้าบนชั้นเป็น 0 ชิ้น <span class="text-xs text-secondary font-semibold">(แนะนำ)</span></p>
+                <p class="text-xs text-muted mt-0.5">คงตำแหน่งชนิดสินค้าเดิมไว้บนแต่ละชั้น แต่ปรับจำนวนเป็น 0 ชิ้น เพื่อรอเติมของใหม่ในเทอมถัดไป</p>
+              </div>
+            </label>
+            <label class="flex items-start gap-2.5 p-3 rounded-xl border border-hairline hover:bg-background cursor-pointer transition-colors">
+              <input type="radio" name="shelf-mode" value="clear" class="mt-0.5 text-primary">
+              <div>
+                <p class="text-sm font-medium text-ink">ล้างการจัดวางสินค้าออกจากชั้นทั้งหมด</p>
+                <p class="text-xs text-muted mt-0.5">ชั้นวางจะว่างเปล่าทั้งหมด ต้องทำการจัดวางสินค้าเข้าชั้นใหม่ตั้งแต่ต้น</p>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- Optional Notes -->
+        <div class="pt-2 border-t border-hairline">
+          <label class="flex items-center gap-2.5 cursor-pointer">
+            <input type="checkbox" id="reset-clear-notes" class="rounded text-primary">
+            <span class="text-xs text-muted">ล้างข้อมูลในส่วน "โน้ตบันทึก (Notes)" ด้วย (หากไม่ติ๊ก จะเก็บโน้ตเดิมไว้)</span>
+          </label>
+        </div>
+
+        <!-- Confirmation Area -->
+        <div class="pt-4 border-t border-hairline space-y-3">
+          <div class="bg-error/10 border border-error/20 rounded-xl p-3.5 flex items-start gap-3">
+            <span class="material-symbols-outlined text-error text-[22px] shrink-0 mt-0.5">warning</span>
+            <div class="text-xs text-error">
+              <p class="font-semibold">คำเตือนความปลอดภัย:</p>
+              <p class="mt-0.5">การรีเซ็ตจะล้างข้อมูลธุรกรรมและสต็อกเดิมของเทอมที่ผ่านมาเพื่อเริ่มเทอมใหม่ โปรดพิมพ์คำว่า <span class="font-mono font-bold uppercase underline">RESET</span> ในช่องด้านล่างเพื่อยืนยันการดำเนินการ</p>
+            </div>
+          </div>
+
+          <div class="flex flex-col sm:flex-row gap-3">
+            <input id="reset-confirm-code" type="text" oninput="checkResetInput(this.value)" placeholder="พิมพ์คำว่า RESET เพื่อยืนยัน" class="flex-1 bg-surface border-2 border-hairline rounded-xl px-4 py-2.5 font-mono text-center text-sm tracking-widest uppercase focus:border-error">
+            <button id="btn-execute-reset" onclick="confirmAndExecuteReset()" disabled class="px-6 py-2.5 rounded-xl font-medium text-white bg-error shadow-sm opacity-40 cursor-not-allowed transition-all flex items-center justify-center gap-2 whitespace-nowrap">
+              <span class="material-symbols-outlined text-[18px]">restart_alt</span>
+              <span>สำรองข้อมูล & เริ่มต้นเทอมใหม่</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Past Semester History -->
+      <div class="bg-surface rounded-2xl border border-hairline shadow-sm p-5">
+        <h3 class="font-display font-semibold text-base mb-3 flex items-center gap-2">
+          <span class="material-symbols-outlined text-primary text-[20px]">history</span>
+          ประวัติการปิดเทอม / เริ่มต้นรอบใหม่ในเครื่องนี้
+        </h3>
+        <div id="past-semester-list">
+          <div class="text-center py-4 text-muted text-xs">กำลังโหลดประวัติ...</div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// 6.2 ตรวจสอบรหัสยืนยัน RESET
+window.checkResetInput = (val) => {
+  const btn = document.getElementById('btn-execute-reset');
+  if (!btn) return;
+  const isMatch = val.trim().toUpperCase() === 'RESET';
+  btn.disabled = !isMatch;
+  if (isMatch) {
+    btn.classList.remove('opacity-40', 'cursor-not-allowed');
+    btn.classList.add('hover:bg-error/90', 'active:scale-95');
+  } else {
+    btn.classList.add('opacity-40', 'cursor-not-allowed');
+    btn.classList.remove('hover:bg-error/90', 'active:scale-95');
+  }
+};
+
+// 6.3 แสดงรายการประวัติที่เคยรีเซ็ต
+function renderPastHistory() {
+  const list = document.getElementById('past-semester-list');
+  if (!list) return;
+  const history = JSON.parse(localStorage.getItem('honesty_semester_history') || '[]');
+  if (history.length === 0) {
+    list.innerHTML = `<p class="text-xs text-muted py-4 text-center">ยังไม่มีประวัติการรีเซ็ตเทอมในเครื่องนี้</p>`;
+    return;
+  }
+  let html = '<div class="divide-y divide-hairline">';
+  history.forEach(item => {
+    html += `
+      <div class="py-3 flex items-center justify-between">
+        <div>
+          <p class="text-sm font-medium text-ink">${escapeHTML(item.term_name)}</p>
+          <p class="text-[11px] text-muted mt-0.5">
+            วันที่: ${new Date(item.reset_at).toLocaleString('th-TH')} | ธุรกรรม: ${item.summary.total_transactions} รายการ
+          </p>
+          <div class="flex gap-2 mt-1.5">
+            <span class="text-[10px] bg-background px-2 py-0.5 rounded border border-hairline">ยอดเงินตอนปิด: ฿${fmtMoney(item.summary.total_balance_before_reset)}</span>
+            <span class="text-[10px] bg-secondary/10 text-secondary px-2 py-0.5 rounded">กำไรสุทธิ: ฿${fmtMoney(item.summary.net_profit)}</span>
+          </div>
+        </div>
+        <div class="text-xs text-muted">
+          <span class="bg-primary-light text-primary px-2.5 py-1 rounded-full font-medium">สำรองแล้ว</span>
+        </div>
+      </div>
+    `;
+  });
+  html += '</div>';
+  list.innerHTML = html;
+}
+
+// 6.4 ดาวน์โหลดไฟล์สำรองข้อมูลปัจจุบันทันที
+window.downloadBackupNow = async () => {
+  toast('กำลังเตรียมข้อมูลสำรอง...', 'info');
+  try {
+    const [
+      allAccs,
+      allTxs,
+      allBatches,
+      allAdjustments,
+      allDisc,
+      allPshelves,
+      allProds,
+      allBldgs,
+      allShelves,
+      allSettings,
+      allNotes,
+      allJobs
+    ] = await Promise.all([
+      fetchAllFromTable('accounts'),
+      fetchAllFromTable('transactions'),
+      fetchAllFromTable('stock_batches'),
+      fetchAllFromTable('stock_adjustments'),
+      fetchAllFromTable('stock_discrepancies'),
+      fetchAllFromTable('product_shelves'),
+      fetchAllFromTable('products'),
+      fetchAllFromTable('buildings'),
+      fetchAllFromTable('shelves'),
+      fetchAllFromTable('shop_settings'),
+      fetchAllFromTable('notes'),
+      fetchAllFromTable('service_jobs')
+    ]);
+
+    const totalBalance = allAccs.reduce((sum, a) => sum + Number(a.balance || 0), 0);
+    const totalIncome = allTxs.filter(t => t.type === 'income').reduce((sum, t) => sum + Number(t.amount || 0), 0);
+    const totalExpense = allTxs.filter(t => t.type === 'expense').reduce((sum, t) => sum + Number(t.amount || 0), 0);
+    const totalLoss = allAdjustments.reduce((sum, a) => sum + Number(a.loss_value || 0), 0);
+
+    const termInput = document.getElementById('reset-term-name');
+    const termName = termInput ? termInput.value.trim() : 'Honesty_Shop_Backup';
+
+    const backupData = {
+      export_type: 'honesty_shop_backup',
+      created_at: new Date().toISOString(),
+      term_name: termName || `สำรองข้อมูล ณ วันที่ ${new Date().toLocaleDateString('th-TH')}`,
+      summary: {
+        total_balance: totalBalance,
+        total_income: totalIncome,
+        total_expenses: totalExpense,
+        net_profit: totalIncome - totalExpense,
+        total_loss_value: totalLoss,
+        total_transactions: allTxs.length,
+        total_stock_batches: allBatches.length,
+        total_adjustments: allAdjustments.length,
+        total_discrepancies: allDisc.length,
+        total_products: allProds.length,
+        total_buildings: allBldgs.length,
+        total_shelves: allShelves.length,
+        total_product_shelves: allPshelves.length
+      },
+      data: {
+        accounts: allAccs,
+        transactions: allTxs,
+        stock_batches: allBatches,
+        stock_adjustments: allAdjustments,
+        stock_discrepancies: allDisc,
+        product_shelves: allPshelves,
+        products: allProds,
+        buildings: allBldgs,
+        shelves: allShelves,
+        shop_settings: allSettings,
+        notes: allNotes,
+        service_jobs: allJobs
+      }
+    };
+
+    const dateStr = new Date().toISOString().slice(0, 10);
+    const filename = `backup_honesty_shop_${dateStr}.json`;
+    downloadJSON(backupData, filename);
+    toast('ดาวน์โหลดไฟล์สำรองข้อมูลเรียบร้อยแล้ว ✓', 'success');
+  } catch (e) {
+    toast('เกิดข้อผิดพลาดในการสำรองข้อมูล: ' + e.message, 'error');
+  }
+};
+
+// 6.5 ดำเนินการรีเซ็ตระบบ
+async function executeReset(options, onProgress) {
+  // ขั้นที่ 1: รวบรวมข้อมูลทั้งหมด
+  onProgress(1, 'กำลังรวบรวมข้อมูลทั้งหมดของระบบเพื่อสำรองข้อมูล...');
+  const [
+    allAccs,
+    allTxs,
+    allBatches,
+    allAdjustments,
+    allDisc,
+    allPshelves,
+    allProds,
+    allBldgs,
+    allShelves,
+    allSettings,
+    allNotes,
+    allJobs
+  ] = await Promise.all([
+    fetchAllFromTable('accounts'),
+    fetchAllFromTable('transactions'),
+    fetchAllFromTable('stock_batches'),
+    fetchAllFromTable('stock_adjustments'),
+    fetchAllFromTable('stock_discrepancies'),
+    fetchAllFromTable('product_shelves'),
+    fetchAllFromTable('products'),
+    fetchAllFromTable('buildings'),
+    fetchAllFromTable('shelves'),
+    fetchAllFromTable('shop_settings'),
+    fetchAllFromTable('notes'),
+    fetchAllFromTable('service_jobs')
+  ]);
+
+  const totalBalance = allAccs.reduce((sum, a) => sum + Number(a.balance || 0), 0);
+  const totalIncome = allTxs.filter(t => t.type === 'income').reduce((sum, t) => sum + Number(t.amount || 0), 0);
+  const totalExpense = allTxs.filter(t => t.type === 'expense').reduce((sum, t) => sum + Number(t.amount || 0), 0);
+  const totalLoss = allAdjustments.reduce((sum, a) => sum + Number(a.loss_value || 0), 0);
+
+  const backupData = {
+    export_type: 'honesty_shop_semester_reset_backup',
+    created_at: new Date().toISOString(),
+    term_name: options.termName || `รอบวันที่ ${new Date().toLocaleDateString('th-TH')}`,
+    summary: {
+      total_balance_before_reset: totalBalance,
+      total_income: totalIncome,
+      total_expenses: totalExpense,
+      net_profit: totalIncome - totalExpense,
+      total_loss_value: totalLoss,
+      total_transactions: allTxs.length,
+      total_stock_batches: allBatches.length,
+      total_adjustments: allAdjustments.length,
+      total_discrepancies: allDisc.length,
+      total_products: allProds.length,
+      total_buildings: allBldgs.length,
+      total_shelves: allShelves.length,
+      total_product_shelves: allPshelves.length
+    },
+    data: {
+      accounts: allAccs,
+      transactions: allTxs,
+      stock_batches: allBatches,
+      stock_adjustments: allAdjustments,
+      stock_discrepancies: allDisc,
+      product_shelves: allPshelves,
+      products: allProds,
+      buildings: allBldgs,
+      shelves: allShelves,
+      shop_settings: allSettings,
+      notes: allNotes,
+      service_jobs: allJobs
+    }
+  };
+
+  // ขั้นที่ 2: บันทึกและดาวน์โหลด JSON อัตโนมัติ
+  onProgress(2, 'สร้างและดาวน์โหลดไฟล์สำรองข้อมูล (JSON)...');
+  const dateStr = new Date().toISOString().slice(0, 10);
+  const safeTermName = (options.termName || 'term').replace(/[^a-zA-Z0-9_\u0E00-\u0E7F]/g, '_');
+  const filename = `backup_${safeTermName}_${dateStr}.json`;
+  downloadJSON(backupData, filename);
+
+  // ขั้นที่ 3: บันทึกประวัติลง localStorage
+  onProgress(3, 'บันทึกประวัติการปิดเทอมลงในระบบประวัติ...');
+  try {
+    const history = JSON.parse(localStorage.getItem('honesty_semester_history') || '[]');
+    history.unshift({
+      id: 'term_' + Date.now(),
+      reset_at: new Date().toISOString(),
+      term_name: options.termName || `รอบวันที่ ${new Date().toLocaleDateString('th-TH')}`,
+      summary: backupData.summary,
+      backup_filename: filename
+    });
+    localStorage.setItem('honesty_semester_history', JSON.stringify(history.slice(0, 20)));
+  } catch (e) {
+    console.warn('Cannot write history to localStorage:', e);
+  }
+
+  // ขั้นที่ 4: ล้าง stock_discrepancies และ stock_adjustments
+  onProgress(4, 'ล้างรายการส่วนต่างและของหาย (Discrepancies & Adjustments)...');
+  await deleteAllFromTable('stock_discrepancies');
+  await deleteAllFromTable('stock_adjustments');
+
+  // ขั้นที่ 5: จัดการสินค้าบนชั้นวาง (product_shelves)
+  onProgress(5, 'รีเซ็ต/ล้างสินค้าบนชั้นวาง (Product Shelves)...');
+  if (options.shelfMode === 'clear') {
+    await deleteAllFromTable('product_shelves');
+  } else {
+    const { error: psErr } = await supabase.from('product_shelves').update({ quantity: 0 }).not('id', 'is', null);
+    if (psErr) throw new Error('ไม่สามารถรีเซ็ตจำนวนสินค้าบนชั้น: ' + psErr.message);
+  }
+
+  // ขั้นที่ 6: ล้างล็อตสต็อกสินค้าในคลัง (stock_batches)
+  onProgress(6, 'ล้างล็อตสต็อกสินค้าในคลัง (Stock Batches)...');
+  await deleteAllFromTable('stock_batches');
+
+  // ขั้นที่ 7: ล้างประวัติธุรกรรม (transactions)
+  onProgress(7, 'ล้างประวัติธุรกรรมรายรับ-รายจ่าย (Transactions)...');
+  await deleteAllFromTable('transactions');
+
+  // ขั้นที่ 8: ปรับยอดเงินคงเหลือในบัญชีเป็น 0.00
+  onProgress(8, 'ปรับยอดเงินคงเหลือทุกบัญชีเป็น ฿0.00 (Accounts)...');
+  const { error: accErr } = await supabase.from('accounts').update({ balance: 0.00 }).not('id', 'is', null);
+  if (accErr) throw new Error('ไม่สามารถรีเซ็ตยอดเงินบัญชี: ' + accErr.message);
+
+  // ขั้นที่ 9: ปรับรอบคำนวณส่วนต่างยอดขาย (shop_settings)
+  onProgress(9, 'ปรับรอบคำนวณส่วนต่างยอดขาย (Shop Settings)...');
+  try {
+    await supabase.from('shop_settings').update({ last_reconciled_at: new Date().toISOString() }).eq('id', 1);
+  } catch (e) {
+    console.warn('shop_settings update:', e);
+  }
+
+  // ขั้นที่ 10 (เสริม): ล้างโน้ตบันทึกและงานบริการถ้าผู้ใช้เลือก
+  if (options.clearNotes) {
+    try { await deleteAllFromTable('notes'); } catch (e) {}
+    try { await deleteAllFromTable('service_jobs'); } catch (e) {}
+  }
+
+  onProgress(10, 'เสร็จสิ้นเรียบร้อย! เริ่มต้นเทอมใหม่แล้ว');
+}
+
+// 6.6 กล่องยืนยันและเริ่มการรีเซ็ต
+window.confirmAndExecuteReset = async () => {
+  const codeInput = document.getElementById('reset-confirm-code');
+  if (!codeInput || codeInput.value.trim().toUpperCase() !== 'RESET') {
+    return toast('กรุณาพิมพ์ RESET ให้ถูกต้องเพื่อยืนยัน', 'error');
+  }
+
+  const termInput = document.getElementById('reset-term-name');
+  const termName = termInput ? termInput.value.trim() : 'เทอมใหม่';
+
+  const shelfModeEl = document.querySelector('input[name="shelf-mode"]:checked');
+  const shelfMode = shelfModeEl ? shelfModeEl.value : 'reset_qty';
+
+  const clearNotes = document.getElementById('reset-clear-notes')?.checked || false;
+
+  const msg = `⚠️ ยืนยันการรีเซ็ตเริ่มต้นเทอมใหม่?\n\n• ชื่อรอบ: ${termName}\n• ชั้นวาง: ${shelfMode === 'clear' ? 'ล้างชั้นวางทั้งหมด' : 'รีเซ็ตจำนวนเป็น 0 ชิ้น'}\n• ยอดเงินในบัญชีจะถูกปรับเป็น ฿0.00\n• ประวัติธุรกรรมและสต็อกเดิมจะถูกล้าง\n• ระบบจะดาวน์โหลดไฟล์สำรองข้อมูล JSON ก่อนเสมอ\n\nต้องการดำเนินการตอนนี้ใช่หรือไม่?`;
+  
+  if (!confirm(msg)) return;
+
+  // เปิด Progress Modal
+  const modal = document.getElementById('reset-progress-modal');
+  const stepsContainer = document.getElementById('progress-steps');
+  const mainIcon = document.getElementById('progress-main-icon');
+  const modalTitle = document.getElementById('progress-modal-title');
+  const doneBtn = document.getElementById('btn-progress-done');
+  
+  modal.classList.remove('modal-hidden');
+  stepsContainer.innerHTML = '';
+  doneBtn.disabled = true;
+  doneBtn.classList.add('opacity-40', 'cursor-not-allowed');
+  doneBtn.textContent = 'กำลังดำเนินการ...';
+  mainIcon.textContent = 'sync';
+  mainIcon.classList.remove('text-secondary', 'text-error');
+  mainIcon.classList.add('animate-spin', 'text-primary');
+  modalTitle.textContent = 'กำลังดำเนินการเริ่มต้นเทอมใหม่';
+
+  const stepsList = [
+    'รวบรวมข้อมูลทั้งหมดของระบบเพื่อสำรองข้อมูล',
+    'สร้างและดาวน์โหลดไฟล์สำรองข้อมูล (JSON)',
+    'บันทึกประวัติการปิดเทอมลงในระบบประวัติ',
+    'ล้างรายการส่วนต่างและของหาย (Discrepancies & Adjustments)',
+    'รีเซ็ต/ล้างสินค้าบนชั้นวาง (Product Shelves)',
+    'ล้างล็อตสต็อกสินค้าในคลัง (Stock Batches)',
+    'ล้างประวัติธุรกรรมรายรับ-รายจ่าย (Transactions)',
+    'ปรับยอดเงินคงเหลือทุกบัญชีเป็น ฿0.00 (Accounts)',
+    'ปรับรอบคำนวณส่วนต่างยอดขาย (Shop Settings)',
+    'เสร็จสิ้นเรียบร้อย! เริ่มต้นเทอมใหม่แล้ว'
+  ];
+
+  // เรนเดอร์ Skeleton สำหรับ Progress Steps
+  stepsList.forEach((st, idx) => {
+    const el = document.createElement('div');
+    el.id = `step-item-${idx + 1}`;
+    el.className = 'flex items-center gap-2.5 text-muted py-1';
+    el.innerHTML = `
+      <span class="material-symbols-outlined text-[16px] text-muted shrink-0">radio_button_unchecked</span>
+      <span>${st}</span>
+    `;
+    stepsContainer.appendChild(el);
+  });
+
+  const updateProgressUI = (stepNum, isDone = false) => {
+    for (let i = 1; i <= stepsList.length; i++) {
+      const stepEl = document.getElementById(`step-item-${i}`);
+      if (!stepEl) continue;
+      const icon = stepEl.querySelector('.material-symbols-outlined');
+      if (i < stepNum || (i === stepNum && isDone)) {
+        stepEl.className = 'flex items-center gap-2.5 text-secondary font-medium py-1';
+        icon.textContent = 'check_circle';
+        icon.className = 'material-symbols-outlined text-[16px] text-secondary shrink-0';
+      } else if (i === stepNum) {
+        stepEl.className = 'flex items-center gap-2.5 text-primary-dark font-medium py-1';
+        icon.textContent = 'sync';
+        icon.className = 'material-symbols-outlined text-[16px] text-primary shrink-0 animate-spin';
+        stepEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+  };
+
+  try {
+    await executeReset({
+      termName,
+      shelfMode,
+      clearNotes
+    }, (stepNum, text) => {
+      updateProgressUI(stepNum);
+    });
+
+    // สำเร็จทั้งหมด
+    updateProgressUI(stepsList.length, true);
+    mainIcon.textContent = 'check_circle';
+    mainIcon.classList.remove('animate-spin', 'text-primary');
+    mainIcon.classList.add('text-secondary');
+    modalTitle.textContent = '🎉 เริ่มต้นเทอมใหม่สำเร็จเรียบร้อย!';
+    
+    doneBtn.disabled = false;
+    doneBtn.classList.remove('opacity-40', 'cursor-not-allowed', 'bg-primary');
+    doneBtn.classList.add('bg-secondary', 'hover:bg-secondary/90', 'active:scale-95');
+    doneBtn.textContent = 'เสร็จสิ้น (ไปที่หน้าข้อมูล)';
+
+    toast('เริ่มต้นเทอมใหม่สำเร็จ พร้อมเริ่มใช้งานแล้ว ✓', 'success');
+  } catch (err) {
+    console.error(err);
+    mainIcon.textContent = 'error';
+    mainIcon.classList.remove('animate-spin', 'text-primary');
+    mainIcon.classList.add('text-error');
+    modalTitle.textContent = 'เกิดข้อผิดพลาดในการรีเซ็ต';
+    
+    toast('เกิดข้อผิดพลาด: ' + err.message, 'error');
+    doneBtn.disabled = false;
+    doneBtn.classList.remove('opacity-40', 'cursor-not-allowed', 'bg-primary');
+    doneBtn.classList.add('bg-error');
+    doneBtn.textContent = 'ปิดหน้าต่าง';
+  }
+};
+
+// 6.7 ปิดหน้าต่างความคืบหน้าเมื่อเสร็จสิ้น
+window.finishResetModal = () => {
+  document.getElementById('reset-progress-modal').classList.add('modal-hidden');
+  loadData();
+  switchTab('stock');
+};
+
 loadData();
 
 
